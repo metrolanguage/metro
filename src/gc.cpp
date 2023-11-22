@@ -12,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <algorithm>
 #include "gc.h"
 #include "alert.h"
 
@@ -19,7 +20,7 @@
 //  注意：厳密には、この数に到達する手前になった段階で GC が作動します。
 #define OBJECT_MEMORY_MAXIMUM   40
 
-#define LOCK(...) std::lock_guard __lock(mtx); { __VA_ARGS__ }
+#define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
 
 namespace metro::gc {
 
@@ -37,7 +38,7 @@ std::vector<Base*> _Memory;
 std::vector<Base*> root; /* binded objects for local-v */
 
 std::vector<Base*>::iterator mFind(Base* object) {
-  return std::find(_Memory.begin(), _Memory.end(), object);
+  return std::find(root.begin(), root.end(), object);
 }
 
 void mAppend(Base* object) {
@@ -172,7 +173,7 @@ void resume() {
 }
 
 void addObject(objects::Base* object) {
-  if( _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
+  if( !isPaused && _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
     _Collect();
   }
 
