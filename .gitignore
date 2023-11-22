@@ -1,0 +1,8 @@
+/build
+/buildd
+
+*.d
+*.o
+
+metro
+metrod
