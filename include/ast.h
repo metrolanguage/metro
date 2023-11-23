@@ -7,11 +7,50 @@
 namespace metro {
   
 enum class ASTKind {
+  // factor
   Value,
   Variable,
+  CallFunc,
+  
+  // member access
+  MemberAccess,
 
+  // expr
   Add,
   Sub,
+  Mul,
+  Div,
+  Mod,
+
+  // bit calc
+  BitAND,   // &
+  BitXOR,   // ^
+  BitOR,    // |
+
+  // logical
+  LogAND,     // &&
+  LogOR,      // ||
+
+  // assign
+  Assignment,
+
+  // variable declaration
+  Let,
+
+  // control-statements
+  If,
+  Switch,
+
+  // loop-statements
+  While, /* also: used for other kind. */
+
+  // global scope
+  Function,
+  Namespace,
+
+
+  /* "import" be processed immediately in parsing. */
+
 };
 
 namespace AST {
