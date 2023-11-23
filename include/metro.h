@@ -7,6 +7,7 @@ namespace metro {
 
 // Metro driver.
 
+class Error;
 class Metro {
 public:
 
@@ -28,6 +29,9 @@ private:
 
   std::vector<std::string> args;
 
+  static std::vector<Error> emittedErrors; /* in Error.cpp */
+
+  friend class Error;
 };
 
 } // namespace metro

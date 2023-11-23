@@ -34,14 +34,14 @@ std::mutex mtx;
 std::thread* thread;
 size_t mark_count;
 
-std::vector<Base*> _Memory;
-std::vector<Base*> root; /* binded objects for local-v */
+std::vector<Object*> _Memory;
+std::vector<Object*> root; /* binded objects for local-v */
 
-std::vector<Base*>::iterator mFind(Base* object) {
+std::vector<Object*>::iterator mFind(Object* object) {
   return std::find(root.begin(), root.end(), object);
 }
 
-void mAppend(Base* object) {
+void mAppend(Object* object) {
   for( auto&& p : _Memory )
     if( p == nullptr ) {
       p = object;
@@ -52,11 +52,11 @@ void mAppend(Base* object) {
 }
 
 /* only delete a pointer from vector. don't call free or delete. */
-void mDelete(Base* object) {
+void mDelete(Object* object) {
   *mFind(object) = nullptr;
 }
 
-void _Bind(Base* object) {
+void _Bind(Object* object) {
   if( std::find(root.cbegin(), root.cend(), object) == root.cend() ) {
     LOCK(
       root.emplace_back(object);
@@ -64,7 +64,7 @@ void _Bind(Base* object) {
   }
 }
 
-void _Unbind(Base* object) {
+void _Unbind(Object* object) {
   if( auto it = std::find(root.cbegin(), root.cend(), object); it != root.cend() ) {
     LOCK(
       root.erase(it);
@@ -72,7 +72,7 @@ void _Unbind(Base* object) {
   }
 }
 
-void _Mark(Base* object) {
+void _Mark(Object* object) {
   object->isMarked = true;
   mark_count++;
 
@@ -144,7 +144,7 @@ void _Collect() {
 
 }
 
-ObjectBinder::ObjectBinder(Base* obj)
+ObjectBinder::ObjectBinder(Object* obj)
   : object(obj)
 {
   _Bind(obj);
@@ -155,12 +155,12 @@ ObjectBinder::~ObjectBinder()
   _Unbind(this->object);
 }
 
-void ObjectBinder::reset(Base* obj) {
+void ObjectBinder::reset(Object* obj) {
   _Unbind(this->object);
   _Bind(this->object = obj);
 }
 
-Base* ObjectBinder::get() const {
+Object* ObjectBinder::get() const {
   return this->object;
 }
 
@@ -172,7 +172,7 @@ void resume() {
   isPaused = false;
 }
 
-void addObject(objects::Base* object) {
+void addObject(objects::Object* object) {
   if( !isPaused && _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
     _Collect();
   }
@@ -180,11 +180,11 @@ void addObject(objects::Base* object) {
   mAppend(object);
 }
 
-ObjectBinder bind(objects::Base* object) {
+ObjectBinder bind(objects::Object* object) {
   return ObjectBinder(object);
 }
 
-void do_collect_force() {
+void doCollectForce() {
   _Collect();
 }
 

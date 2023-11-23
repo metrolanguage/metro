@@ -9,11 +9,8 @@ using stringVector = std::vector<std::string>;
 
 using namespace metro;
 
-int main(int, char**) {
-
+void test() {
   using namespace objects;
-
-  std::cout << Color::Red << "hello, World!\n" << Color::Default;
 
   auto obj = gc::newObject<Int>(10);
 
@@ -30,6 +27,15 @@ int main(int, char**) {
     std::cout << vec->to_string() << std::endl;
   }
 
-  gc::do_collect_force();
+}
+
+int main(int, char**) {
+
+
+  std::cout << Color::Red << "hello, World!\n" << Color::Default;
+
+
+
+  gc::doCollectForce();
   gc::clean();
 }
