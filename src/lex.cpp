@@ -5,10 +5,34 @@
 namespace metro {
 
 static char const* punctuaters[] {
+  "->",
+  "<<",
+  ">>",
+  "<=",
+  ">=",
+  "<",
+  ">",
   "+",
   "-",
-  "*",
   "/",
+  "*",
+  "%",
+  "=",
+  ";",
+  ":",
+  ",",
+  ".",
+  "[",
+  "]",
+  "(",
+  ")",
+  "{",
+  "}",
+  "!",
+  "?",
+  "&",
+  "^",
+  "|",
 };
 
 Lexer::Lexer(SourceLoc const& src)
@@ -33,8 +57,21 @@ Token* Lexer::lex() {
     auto pos = this->position;
     auto c = this->peek();
 
+    // hex
+    if( this->match("0x") ) {
+      this->position += 2;
+      cur = new Token(TokenKind::Binary, cur, { str, this->pass_while(isxdigit) }, pos);
+    }
+
+    // bin
+    else if( this->match("0b") ) {
+      this->position += 2;
+      cur = new Token(TokenKind::Binary, cur, { str,
+        this->pass_while([] (char x) { return x == '0' || x == '1'; }) }, pos);
+    }
+
     // digits
-    if( isdigit(c) ) {
+    else if( isdigit(c) ) {
       cur = new Token(TokenKind::Int, cur, { str, this->pass_while(isdigit) }, pos);
     }
 

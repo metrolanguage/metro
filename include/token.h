@@ -8,6 +8,8 @@ enum class TokenKind {
   Unknown,
 
   /* numeric types */
+  Hexadecimal,
+  Binary,
   Int,
   Float,
   USize,
