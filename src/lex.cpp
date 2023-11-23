@@ -1,5 +1,6 @@
 #include "lex.h"
 #include "SourceLoc.h"
+#include "Error.h"
 
 namespace metro {
 
@@ -44,7 +45,10 @@ Token* Lexer::lex() {
         }
       }
 
-      
+      Error(this->position)
+        .setMessage("unknown token")
+        .emit()
+        .exit();
 
     found_punctuater:;
     }
