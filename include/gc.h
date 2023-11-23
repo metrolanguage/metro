@@ -19,7 +19,10 @@ void pause();
 void resume();
 
 void addObject(objects::Object*);
-ObjectBinder bind(objects::Object*);
+ObjectBinder make_binder(objects::Object*);
+
+void bind(objects::Object*);
+void unbind(objects::Object*);
 
 void doCollectForce();
 void clean();
@@ -29,6 +32,15 @@ T* newObject(Ts&&... args) {
   auto obj = new T(std::forward<Ts>(args)...);
 
   addObject(obj);
+
+  return obj;
+}
+
+template <std::derived_from<objects::Object> T, class... Ts>
+T* newBinded(Ts&&... args) {
+  auto obj = newObject<T>(std::forward<Ts>(args)...);
+
+  bind(obj);
 
   return obj;
 }

@@ -8,7 +8,7 @@ namespace metro::utils {
 std::string open_text_file(std::string const& path) {
   std::ifstream ifs{ path };
 
-  if( !ifs.fail() ) {
+  if( ifs.fail() ) {
     Metro::getInstance()->fatalError("cannot open file '" + path + "'");
   }
 

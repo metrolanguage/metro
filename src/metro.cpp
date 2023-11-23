@@ -35,7 +35,7 @@ static void test() {
   auto vec = gc::newObject<Vector>();
 
   {
-    auto binder = gc::bind(vec);
+    auto binder = gc::make_binder(vec);
 
     for(int i=0;i<100;i++)
       gc::newObject<Int>(i);
@@ -69,7 +69,8 @@ int Metro::main() {
 }
 
 void Metro::fatalError(std::string const& msg) {
-
+  std::cout << Color::Red << "fatal error: " << Color::Default << msg << std::endl;
+  std::exit(1);
 }
 
 Metro* Metro::getInstance() {

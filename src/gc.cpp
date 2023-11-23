@@ -180,8 +180,16 @@ void addObject(objects::Object* object) {
   mAppend(object);
 }
 
-ObjectBinder bind(objects::Object* object) {
+ObjectBinder make_binder(objects::Object* object) {
   return ObjectBinder(object);
+}
+
+void bind(objects::Object* obj) {
+  _Bind(obj);
+}
+
+void unbind(objects::Object* obj) {
+  _Unbind(obj);
 }
 
 void doCollectForce() {

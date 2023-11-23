@@ -31,11 +31,30 @@ Token* Lexer::lex() {
   while( this->check() ) {
     auto str = this->source.data() + this->position;
     auto pos = this->position;
-    auto ch = this->peek();
+    auto c = this->peek();
 
-    if( isdigit(ch) ) {
+    // digits
+    if( isdigit(c) ) {
       cur = new Token(TokenKind::Int, cur, { str, this->pass_while(isdigit) }, pos);
     }
+
+    // identifier
+    else if( isalpha(c) || c == '_' ) {
+      cur = new Token(TokenKind::Identifier, cur, { str,
+        this->pass_while([] (char x) { return isalnum(x) || x == '_'; }) }, pos);
+    }
+
+    // char
+    else if( c == '\'' ) {
+      cur = new Token(TokenKind::Char, cur, this->eat_literal(c), pos);
+    }
+
+    // string
+    else if( c == '"' ) {
+      cur = new Token(TokenKind::String, cur, this->eat_literal(c), pos);
+    }
+
+    // find punctuater
     else {
       for( std::string_view pu : punctuaters ) {
         if( this->match(pu) ) {

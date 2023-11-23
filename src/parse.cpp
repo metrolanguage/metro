@@ -1,5 +1,6 @@
 #include "parse.h"
 #include "Error.h"
+#include "gc.h"
 
 namespace metro {
 
@@ -19,7 +20,7 @@ AST::Base* Parser::factor() {
   switch( tok->kind ) {
     case TokenKind::Int: {
       this->next();
-      return new AST::Value(tok, new objects::Int(std::stoi(std::string(tok->str))));
+      return new AST::Value(tok, gc::newObject<objects::Int>(std::stoi(std::string(tok->str))));
     }
   }
 
