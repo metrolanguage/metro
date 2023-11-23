@@ -5,7 +5,8 @@ namespace metro {
 
 Lexer::Lexer(SourceLoc const& src)
   : loc(src),
-    source(
+    source(src.data),
+    position(0)
 {
 }
 
@@ -33,7 +34,7 @@ size_t Lexer::pass_space() {
 
 }
 
-size_t Lexer::pass_while(std::functional<bool(char)> cond) {
+size_t Lexer::pass_while(std::function<bool(char)> cond) {
 
 }
 

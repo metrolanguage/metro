@@ -17,7 +17,7 @@ private:
   char peek();
   bool match(std::string_view s);
   size_t pass_space();
-  size_t pass_while(std::functional<bool(char)> cond);
+  size_t pass_while(std::function<bool(char)> cond);
 
   SourceLoc const& loc;
   std::string const& source;

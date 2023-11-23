@@ -9,7 +9,7 @@ struct SourceLoc {
   std::string data;
 
   SourceLoc();
-  sourceLoc(std::string const& path);
+  SourceLoc(std::string const& path);
 };
 
 } // namespace metro

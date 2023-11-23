@@ -16,7 +16,7 @@ Token::Token(TokenKind kind)
 {
 }
 
-Token::Token(TokenKind kind, Token* prev, sitd::string_view str, size_t pos)
+Token::Token(TokenKind kind, Token* prev, std::string_view str, size_t pos)
   : kind(kind),
     prev(prev),
     next(nullptr),

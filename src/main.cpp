@@ -3,6 +3,7 @@
 #include <vector>
 #include "alert.h"
 #include "gc.h"
+#include "color.h"
 
 using stringVector = std::vector<std::string>;
 
@@ -11,6 +12,8 @@ using namespace metro;
 int main(int, char**) {
 
   using namespace objects;
+
+  std::cout << Color::Red << "hello, World!\n" << Color::Default;
 
   auto obj = gc::newObject<Int>(10);
 
@@ -26,7 +29,7 @@ int main(int, char**) {
 
     std::cout << vec->to_string() << std::endl;
   }
-  
+
   gc::do_collect_force();
   gc::clean();
 }
