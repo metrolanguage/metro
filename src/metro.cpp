@@ -2,8 +2,10 @@
 #include "metro.h"
 #include "gc.h"
 #include "color.h"
+#include "SourceLoc.h"
 #include "lex.h"
 #include "parse.h"
+#include "eval.h"
 
 namespace metro {
 
@@ -24,6 +26,8 @@ Metro::~Metro()
 static void test() {
   using namespace objects;
 
+  std::cout << Color::Red << "hello, World!\n" << Color::Default;
+
   auto obj = gc::newObject<Int>(10);
 
   std::cout << obj->value << std::endl;
@@ -43,9 +47,20 @@ static void test() {
 
 int Metro::main() {
 
-  std::cout << Color::Red << "hello, World!\n" << Color::Default;
+  SourceLoc source{ "test.metro" };
 
-  test();
+  Lexer lexer{ source };
+
+  auto token = lexer.lex();
+
+  Parser parser{ token };
+
+  auto ast = parser.parse();
+
+  Evaluator eval;
+
+  std::cout << eval.eval(ast)->to_string() << std::endl;
+
 
   gc::doCollectForce();
   gc::clean();

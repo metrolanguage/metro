@@ -20,6 +20,9 @@ struct Base {
   ASTKind kind;
   Token* token;
 
+  template <class T>
+  T* as() { return (T*)this; }
+
 protected:
   Base(ASTKind kind, Token* token = nullptr)
     : kind(kind),
