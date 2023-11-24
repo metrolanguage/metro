@@ -96,11 +96,12 @@ struct Variable : Base {
   }
 };
 
+struct Function;
 struct CallFunc : Base {
   std::vector<Base*> arguments;
 
   union {
-    size_t index;           // if user-defined
+    Function* userdef;      // if user-defined
     BuiltinFunc* builtin;   // if builtin
   };
 
@@ -111,7 +112,7 @@ struct CallFunc : Base {
   CallFunc(Token* token, std::vector<Base*> arguments = { })
     : Base(ASTKind::CallFunc, token),
       arguments(std::move(arguments)),
-      index(0)
+      userdef(nullptr)
   {
   }
 };

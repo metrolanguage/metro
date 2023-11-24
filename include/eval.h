@@ -6,6 +6,19 @@
 namespace metro {
 
 class Evaluator {
+  using Object = objects::Object;
+  using Storage = std::vector<Object*>;
+
+  struct CallStack {
+    AST::Function* func;
+    Storage  storage;
+
+    CallStack(AST::Function* func)
+      : func(func)
+    {
+    }
+  };
+
 public:
 
   Evaluator() { }
@@ -15,6 +28,16 @@ public:
 
 private:
 
+  bool in_func() const {
+    return !this->callStacks.empty();
+  }
+
+  CallStack* getCurrentCallStack() const {
+    return *callStacks.rbegin();
+  }
+
+  Storage  globalStorage;
+  std::vector<CallStack> callStacks;
 
 };
 

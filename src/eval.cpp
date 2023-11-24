@@ -14,7 +14,9 @@ Object* Evaluator::eval(AST::Base* ast) {
       return ast->as<AST::Value>()->object;
     }
 
-    
+    case ASTKind::Variable: {
+      
+    }
 
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
