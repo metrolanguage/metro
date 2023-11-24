@@ -29,4 +29,9 @@ void Error::exit() {
   std::exit(1);
 }
 
+void Error::check() {
+  if( !Metro::emittedErrors.empty() )
+    std::exit(1);
+}
+
 } // namespace metro

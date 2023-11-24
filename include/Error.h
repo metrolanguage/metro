@@ -38,6 +38,7 @@ public:
   [[noreturn]]
   void exit();
 
+  static void check();
 
 private:
 

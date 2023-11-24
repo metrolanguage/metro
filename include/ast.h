@@ -42,7 +42,7 @@ enum class ASTKind {
   Scope,
 
   // variable declaration
-  Let,
+  // Let,
 
   // control-statements
   If,
@@ -102,10 +102,8 @@ struct Function;
 struct CallFunc : Base {
   std::vector<Base*> arguments;
 
-  union {
-    Function const* userdef;              // if user-defined
-    builtin::BuiltinFunc const* builtin;  // if builtin
-  };
+  Function const* userdef;              // if user-defined
+  builtin::BuiltinFunc const* builtin;  // if builtin
 
   std::string_view getName() const {
     return this->token->str;
@@ -114,7 +112,8 @@ struct CallFunc : Base {
   CallFunc(Token* token, std::vector<Base*> arguments = { })
     : Base(ASTKind::CallFunc, token),
       arguments(std::move(arguments)),
-      userdef(nullptr)
+      userdef(nullptr),
+      builtin(nullptr)
   {
   }
 };

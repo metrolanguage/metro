@@ -31,6 +31,13 @@ void Checker::check(AST::Base* ast) {
 
       break;
     }
+
+    case ASTKind::Scope: {
+      for( auto&& x : ast->as<AST::Scope>()->statements )
+        this->check(x);
+        
+      break;
+    }
   }
 }
 

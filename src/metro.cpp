@@ -7,6 +7,7 @@
 #include "parse.h"
 #include "check.h"
 #include "eval.h"
+#include "Error.h"
 
 namespace metro {
 
@@ -32,20 +33,23 @@ int Metro::main() {
 
   auto token = lexer.lex();
 
+  Error::check();
+
   Parser parser{ token };
 
   auto ast = parser.parse();
+
+  Error::check();
 
   Checker checker{ ast->as<AST::Scope>() };
 
   checker.check(ast);
 
+  Error::check();
+
   Evaluator eval;
 
-  (void)ast;
-
-  // std::cout << eval.eval(ast)->to_string() << std::endl;
-
+  eval.eval(ast);
 
   gc::doCollectForce();
   gc::clean();
