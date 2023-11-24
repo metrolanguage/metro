@@ -4,7 +4,7 @@
 
 #include <string>
 #include <cstdint>
-#include "utils.h"
+#include "Utils.h"
 
 namespace metro {
 
@@ -14,22 +14,23 @@ public:
     uint32_t val;
 
     struct {
-      uint8_t r, g, b, a;
+      uint8_t r, g, b;
     };
   };
 
   bool isBackground;
 
   Color(uint32_t col = 0)
-    : val(col)
+    : val(col),
+      isBackground(false)
   {
   }
 
-  Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
+  Color(uint8_t r, uint8_t g, uint8_t b)
     : r(r),
       g(g),
       b(b),
-      a(a)
+      isBackground(false)
   {
   }
 

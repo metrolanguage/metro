@@ -1,5 +1,5 @@
 #include "alert.h"
-#include "check.h"
+#include "Checker.h"
 #include "BuiltinFunc.h"
 #include "Error.h"
 
@@ -15,8 +15,15 @@ void Checker::check(AST::Base* ast) {
     return;
 
   switch( ast->kind ) {
+    case ASTKind::Value:
+    case ASTKind::Variable:
+      break;
+
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
+
+      for( auto&& arg : cf->arguments )
+        this->check(arg);
 
       if( (cf->userdef = this->findUserDefFunction(cf->getName())) )
         break;
@@ -31,11 +38,36 @@ void Checker::check(AST::Base* ast) {
 
       break;
     }
+
+    case ASTKind::Scope: {
+      for( auto&& x : ast->as<AST::Scope>()->list )
+        this->check(x);
+        
+      break;
+    }
+
+    case ASTKind::While: {
+      auto x = ast->as<AST::While>();
+
+      this->check(x->cond);
+      this->check(x->code);
+
+      break;
+    }
+  
+    default: {
+      auto x = ast->as<AST::Expr>();
+
+      this->check(x->left);
+      this->check(x->right);
+
+      break;
+    }
   }
 }
 
-AST::Function* Checker::findUserDefFunction(std::string_view name) {
-  for( auto&& ast : this->_root->statements )
+AST::Function const* Checker::findUserDefFunction(std::string_view name) {
+  for( auto&& ast : this->_root->list )
     if( ast->kind == ASTKind::Function &&
           ast->as<AST::Function>()->getName() == name )
       return ast->as<AST::Function>();

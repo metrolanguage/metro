@@ -2,13 +2,13 @@
 #include <sstream>
 #include <vector>
 #include "BuiltinFunc.h"
-#include "gc.h"
+#include "GC.h"
 
 #define DEF(name, argc) \
   BuiltinFunc(name, argc, [] (std::vector<Object*> args) -> Object* {
 
 #define ENDEF \
-  })
+  }),
 
 using namespace metro::objects;
 
@@ -23,9 +23,22 @@ static std::vector<BuiltinFunc> const _all_functions {
 
     auto str = ss.str();
 
+    std::cout << str;
+
+    return new Int((int)str.length());
+  ENDEF
+
+  DEF("println", -1)
+    std::stringstream ss;
+
+    for( auto&& arg : args )
+      ss << arg->to_string();
+
+    auto str = ss.str();
+
     std::cout << str << std::endl;
 
-    return gc::newObject<Int>((int)str.length());
+    return new Int((int)str.length() + 1);
   ENDEF
 };
 

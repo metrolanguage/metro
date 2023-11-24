@@ -1,6 +1,6 @@
-#include "lex.h"
 #include "SourceLoc.h"
 #include "Error.h"
+#include "Lexer.h"
 
 namespace metro {
 

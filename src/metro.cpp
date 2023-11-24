@@ -1,12 +1,15 @@
 #include <iostream>
+
 #include "metro.h"
-#include "gc.h"
 #include "color.h"
 #include "SourceLoc.h"
-#include "lex.h"
-#include "parse.h"
-#include "check.h"
-#include "eval.h"
+#include "Error.h"
+
+#include "Lexer.h"
+#include "Parser.h"
+#include "Checker.h"
+#include "Evaluator.h"
+#include "GC.h"
 
 namespace metro {
 
@@ -32,23 +35,31 @@ int Metro::main() {
 
   auto token = lexer.lex();
 
+  Error::check();
+
   Parser parser{ token };
 
   auto ast = parser.parse();
+
+  Error::check();
 
   Checker checker{ ast->as<AST::Scope>() };
 
   checker.check(ast);
 
+  Error::check();
+
   Evaluator eval;
 
-  (void)ast;
+  GC::enable();
 
-  // std::cout << eval.eval(ast)->to_string() << std::endl;
+  eval.eval(ast);
 
+  GC::doCollectForce();
+  GC::exitGC();
 
-  gc::doCollectForce();
-  gc::clean();
+  delete ast;
+  delete token;
 
   return 0;
 }

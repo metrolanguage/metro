@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "token.h"
-#include "object.h"
+#include "Token.h"
+#include "Object.h"
 
 namespace metro {
 
@@ -42,7 +42,7 @@ enum class ASTKind {
   Scope,
 
   // variable declaration
-  Let,
+  // Let,
 
   // control-statements
   If,
@@ -77,6 +77,26 @@ protected:
   }
 };
 
+struct WithName : Base {
+  std::string name;
+
+  std::string const& getName() const {
+    return this->name;
+  }
+
+  WithName(ASTKind kind, std::string const& name)
+    : Base(kind, nullptr),
+      name(name)
+  {
+  }
+
+protected:
+  WithName(ASTKind k, Token* t = nullptr)
+    : Base(k, t)
+  {
+  }
+};
+
 struct Value : Base {
   objects::Object* object;
 
@@ -85,15 +105,18 @@ struct Value : Base {
       object(object)
   {
   }
+
+  ~Value()
+  {
+    delete this->object;
+  }
 };
 
-struct Variable : Base {
-  std::string_view getName() const {
-    return this->token->str;
-  }
-
+struct Variable : WithName {
+  using WithName::WithName;
+  
   Variable(Token* token)
-    : Base(ASTKind::Variable, token)
+    : WithName(ASTKind::Variable, token)
   {
   }
 };
@@ -102,10 +125,8 @@ struct Function;
 struct CallFunc : Base {
   std::vector<Base*> arguments;
 
-  union {
-    Function const* userdef;              // if user-defined
-    builtin::BuiltinFunc const* builtin;  // if builtin
-  };
+  Function const* userdef;              // if user-defined
+  builtin::BuiltinFunc const* builtin;  // if builtin
 
   std::string_view getName() const {
     return this->token->str;
@@ -114,8 +135,15 @@ struct CallFunc : Base {
   CallFunc(Token* token, std::vector<Base*> arguments = { })
     : Base(ASTKind::CallFunc, token),
       arguments(std::move(arguments)),
-      userdef(nullptr)
+      userdef(nullptr),
+      builtin(nullptr)
   {
+  }
+
+  ~CallFunc()
+  {
+    for( auto&& arg : this->arguments )
+      delete arg;
   }
 };
 
@@ -129,14 +157,26 @@ struct Expr : Base {
       right(right)
   {
   }
+
+  ~Expr()
+  {
+    delete this->left;
+    delete this->right;
+  }
 };
 
 struct Scope : Base {
-  std::vector<Base*> statements;
+  std::vector<Base*> list;
 
-  Scope()
-    : Base(ASTKind::Scope)
+  Scope(Token* token)
+    : Base(ASTKind::Scope, token)
   {
+  }
+
+  ~Scope()
+  {
+    for( auto&& x : this->list )
+      delete x;
   }
 };
 
@@ -152,6 +192,13 @@ struct If : Base {
       case_false(nullptr)
   {
   }
+
+  ~If()
+  {
+    delete this->cond;
+    delete this->case_true;
+    delete this->case_false;
+  }
 };
 
 struct Switch : Base {
@@ -164,13 +211,19 @@ struct Switch : Base {
         scope(scope)
     {
     }
+
+    ~Case()
+    {
+      delete this->to_compare;
+      delete this->scope;
+    }
   };
 
   Base* expr;
   std::vector<Case> cases;
 
-  Case& append(Base* toCompare, Base* scope) {
-    return this->cases.emplace_back(toCompare, scope);
+  Case& append(Base* to_compare, Base* scope) {
+    return this->cases.emplace_back(to_compare, scope);
   }
 
   Switch(Token* token)
@@ -178,17 +231,28 @@ struct Switch : Base {
       expr(nullptr)
   {
   }
+
+  ~Switch()
+  {
+    delete this->expr;
+  }
 };
 
 struct While : Base {
   Base* cond;
-  Base* scope;
+  Base* code;
 
   While(Token* token)
     : Base(ASTKind::While, token),
       cond(nullptr),
-      scope(nullptr)
+      code(nullptr)
   {
+  }
+
+  ~While()
+  {
+    delete this->cond;
+    delete this->code;
   }
 };
 
@@ -201,6 +265,11 @@ struct Function : Base {
       : type(type),
         name(name)
     {
+    }
+
+    ~Argument()
+    {
+      delete this->type;
     }
   };
 
@@ -217,6 +286,11 @@ struct Function : Base {
       name_token(nullptr),
       scope(nullptr)
   {
+  }
+
+  ~Function()
+  {
+    delete this->scope;
   }
 };
 

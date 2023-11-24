@@ -5,14 +5,14 @@ BUILD			:= 	build
 INCLUDE		:= 	include
 SOURCE		:= 	src
 
-CC		:= gcc
-CXX		:= g++
+CC			:= clang
+CXX			:= clang++
 
-OPTI					?= -O0 -g
+OPTI			?= -O0 -g
 COMMONFLAGS		:= $(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)
-CFLAGS				:= $(COMMONFLAGS) -std=c17
-CXXFLAGS			:= $(COMMONFLAGS) -std=c++20
-LDFLAGS				:=
+CFLAGS			:= $(COMMONFLAGS) -std=c17
+CXXFLAGS		:= $(COMMONFLAGS) -std=c++20
+LDFLAGS			:=
 
 %.o: %.c
 	@echo $(notdir $<)
@@ -27,10 +27,10 @@ ifneq ($(BUILD), $(notdir $(CURDIR)))
 CFILES			= $(notdir $(foreach dir,$(SOURCE),$(wildcard $(dir)/*.c)))
 CXXFILES		= $(notdir $(foreach dir,$(SOURCE),$(wildcard $(dir)/*.cpp)))
 
-export OUTPUT			= $(TOPDIR)/$(TARGET)
-export VPATH			= $(foreach dir,$(SOURCE),$(TOPDIR)/$(dir))
+export OUTPUT		= $(TOPDIR)/$(TARGET)
+export VPATH		= $(foreach dir,$(SOURCE),$(TOPDIR)/$(dir))
 export INCLUDES		= $(foreach dir,$(INCLUDE),-I$(TOPDIR)/$(dir))
-export OFILES			= $(CFILES:.c=.o) $(CXXFILES:.cpp=.o)
+export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cpp=.o)
 
 .PHONY: $(BUILD) all re clean
 
