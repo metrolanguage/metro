@@ -27,6 +27,8 @@ void unbind(objects::Object*);
 void doCollectForce();
 void clean();
 
+objects::Object* cloneObject(objects::Object*);
+
 template <std::derived_from<objects::Object> T, class... Ts>
 T* newObject(Ts&&... args) {
   auto obj = new T(std::forward<Ts>(args)...);

@@ -38,6 +38,24 @@ protected:
   }
 };
 
+struct None : Object {
+  std::string to_string() const {
+    return "none";
+  }
+
+  static None* getNone() {
+    return &_none;
+  }
+
+  None()
+    : Object(Type::None)
+  {
+  }
+
+private:
+  static None _none;
+};
+
 template <class T, Type::Kind k>
 struct _Primitive : Object {
   T value;
@@ -64,6 +82,12 @@ struct _Primitive<std::u16string, Type::String> : Object {
   _Primitive(std::u16string const& val = u"")
     : Object(Type::String),
       value(val)
+  {
+  }
+
+  _Primitive(std::string const& str)
+    : Object(Type::String),
+      value(conv.from_bytes(str))
   {
   }
 

@@ -23,28 +23,6 @@ Metro::~Metro()
 {
 }
 
-static void test() {
-  using namespace objects;
-
-  std::cout << Color::Red << "hello, World!\n" << Color::Default;
-
-  auto obj = gc::newObject<Int>(10);
-
-  std::cout << obj->value << std::endl;
-
-  auto vec = gc::newObject<Vector>();
-
-  {
-    auto binder = gc::make_binder(vec);
-
-    for(int i=0;i<100;i++)
-      gc::newObject<Int>(i);
-
-    std::cout << vec->to_string() << std::endl;
-  }
-
-}
-
 int Metro::main() {
 
   SourceLoc source{ "test.metro" };
@@ -59,7 +37,9 @@ int Metro::main() {
 
   Evaluator eval;
 
-  std::cout << eval.eval(ast)->to_string() << std::endl;
+  (void)ast;
+
+  // std::cout << eval.eval(ast)->to_string() << std::endl;
 
 
   gc::doCollectForce();

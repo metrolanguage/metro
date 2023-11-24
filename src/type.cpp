@@ -41,6 +41,8 @@ std::string Type::to_string() const {
       ret += p.to_string();
       if( &p != &*this->params.rbegin() ) ret += ", ";
     }
+
+    ret += ">";
   }
 
   return ret;

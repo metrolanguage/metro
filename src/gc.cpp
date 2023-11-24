@@ -211,4 +211,50 @@ void clean() {
   }
 }
 
+objects::Object* cloneObject(objects::Object* obj) {
+  switch( obj->type.kind ) {
+    case Type::None:
+      return newObject<None>();
+    
+    case Type::Int:
+      return newObject<Int>(obj->as<Int>()->value);
+    
+    case Type::Float:
+      return newObject<Float>(obj->as<Float>()->value);
+
+    case Type::USize:
+      return newObject<USize>(obj->as<USize>()->value);
+    
+    case Type::Bool:
+      return newObject<Bool>(obj->as<Bool>()->value);
+    
+    case Type::Char:
+      return newObject<Char>(obj->as<Char>()->value);
+    
+    case Type::String:
+      return newObject<String>(obj->as<String>()->value);
+
+    case Type::Vector: {
+      auto x = newObject<Vector>();
+
+      for( auto&& e : obj->as<Vector>()->elements )
+        x->append(cloneObject(e));
+
+      return x;
+    }
+
+    case Type::Dict: {
+      auto x = newObject<Dict>();
+
+      for( auto&& [k, v] : obj->as<Dict>()->elements )
+        x->append(cloneObject(k), cloneObject(v));
+
+      return x;
+    }
+  }
+
+  alert;
+  return nullptr;
+}
+
 } // namespace metro::gc

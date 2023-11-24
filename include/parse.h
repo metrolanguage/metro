@@ -17,12 +17,8 @@ public:
   AST::Base* add();
   AST::Base* expr();
 
+  AST::Base* stmt();
 
-  /*
-  todo:
-
-  AST::Base* parseStatement();
-  */
 
 
 private:

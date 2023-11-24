@@ -11,7 +11,7 @@ Parser::Parser(Token* token)
 }
 
 AST::Base* Parser::parse() {
-  return this->expr();
+  
 }
 
 AST::Base* Parser::factor() {
@@ -20,7 +20,35 @@ AST::Base* Parser::factor() {
   switch( tok->kind ) {
     case TokenKind::Int: {
       this->next();
-      return new AST::Value(tok, gc::newObject<objects::Int>(std::stoi(std::string(tok->str))));
+      return new AST::Value(tok,
+        gc::newObject<objects::Int>(std::stoi(std::string(tok->str))));
+    }
+
+    case TokenKind::String: {
+      this->next();
+      return new AST::Value(tok,
+        gc::newObject<objects::String>(std::string(tok->str)));
+    }
+
+    case TokenKind::Identifier: {
+
+      this->next();
+
+      if( this->eat("(") ) {
+        auto ast = new AST::CallFunc(tok);
+        
+        if( !this->eat(")") ) {
+          do {
+            ast->arguments.emplace_back(this->expr());
+          } while( this->eat(",") );
+
+          this->expect(")");
+        }
+
+        return ast;
+      }
+
+      return new AST::Variable(tok);
     }
   }
 

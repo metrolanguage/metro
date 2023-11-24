@@ -34,6 +34,9 @@ enum class ASTKind {
   // assign
   Assignment,
 
+  // scope
+  Scope,
+
   // variable declaration
   Let,
 
@@ -91,6 +94,20 @@ struct Variable : Base {
   }
 };
 
+struct CallFunc : Base {
+  std::vector<Base*> arguments;
+
+  std::string_view getName() const {
+    return this->token->str;
+  }
+
+  CallFunc(Token* token, std::vector<Base*> arguments = { })
+    : Base(ASTKind::CallFunc, token),
+      arguments(std::move(arguments))
+  {
+  }
+};
+
 struct Expr : Base {
   Base* left;
   Base* right;
@@ -102,6 +119,69 @@ struct Expr : Base {
   {
   }
 };
+
+struct Scope : Base {
+  std::vector<Base*> statements;
+
+  Scope()
+    : Base(ASTKind::Scope)
+  {
+  }
+};
+
+struct If : Base {
+  Base* cond;
+  Base* case_true;
+  Base* case_false;
+
+  If(Token* token)
+    : Base(ASTKind::If, token),
+      cond(nullptr),
+      case_true(nullptr),
+      case_false(nullptr)
+  {
+  }
+};
+
+struct Switch : Base {
+  struct Case {
+    Base* to_compare;
+    Base* scope;
+
+    Case(Base* to_compare, Base* scope)
+      : to_compare(to_compare),
+        scope(scope)
+    {
+    }
+  };
+
+  Base* expr;
+  std::vector<Case> cases;
+
+  Case& append(Base* toCompare, Base* scope) {
+    return this->cases.emplace_back(toCompare, scope);
+  }
+
+  Switch(Token* token)
+    : Base(ASTKind::Switch, token),
+      expr(nullptr)
+  {
+  }
+};
+
+struct While : Base {
+  Base* cond;
+  Base* scope;
+
+  While(Token* token)
+    : Base(ASTKind::While, token),
+      cond(nullptr),
+      scope(nullptr)
+  {
+  }
+};
+
+struct Function
 
 } // namespace AST
 
