@@ -195,4 +195,4 @@ void exitGC() {
   root.clear();
 }
 
-} // namespace metro::gc
+} // namespace metro::GC
