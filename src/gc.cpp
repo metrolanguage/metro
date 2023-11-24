@@ -12,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <algorithm>
 #include "gc.h"
 #include "alert.h"
 
@@ -19,7 +20,7 @@
 //  注意：厳密には、この数に到達する手前になった段階で GC が作動します。
 #define OBJECT_MEMORY_MAXIMUM   40
 
-#define LOCK(...) std::lock_guard __lock(mtx); { __VA_ARGS__ }
+#define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
 
 namespace metro::gc {
 
@@ -33,14 +34,14 @@ std::mutex mtx;
 std::thread* thread;
 size_t mark_count;
 
-std::vector<Base*> _Memory;
-std::vector<Base*> root; /* binded objects for local-v */
+std::vector<Object*> _Memory;
+std::vector<Object*> root; /* binded objects for local-v */
 
-std::vector<Base*>::iterator mFind(Base* object) {
-  return std::find(_Memory.begin(), _Memory.end(), object);
+std::vector<Object*>::iterator mFind(Object* object) {
+  return std::find(root.begin(), root.end(), object);
 }
 
-void mAppend(Base* object) {
+void mAppend(Object* object) {
   for( auto&& p : _Memory )
     if( p == nullptr ) {
       p = object;
@@ -51,11 +52,11 @@ void mAppend(Base* object) {
 }
 
 /* only delete a pointer from vector. don't call free or delete. */
-void mDelete(Base* object) {
+void mDelete(Object* object) {
   *mFind(object) = nullptr;
 }
 
-void _Bind(Base* object) {
+void _Bind(Object* object) {
   if( std::find(root.cbegin(), root.cend(), object) == root.cend() ) {
     LOCK(
       root.emplace_back(object);
@@ -63,7 +64,7 @@ void _Bind(Base* object) {
   }
 }
 
-void _Unbind(Base* object) {
+void _Unbind(Object* object) {
   if( auto it = std::find(root.cbegin(), root.cend(), object); it != root.cend() ) {
     LOCK(
       root.erase(it);
@@ -71,7 +72,7 @@ void _Unbind(Base* object) {
   }
 }
 
-void _Mark(Base* object) {
+void _Mark(Object* object) {
   object->isMarked = true;
   mark_count++;
 
@@ -143,7 +144,7 @@ void _Collect() {
 
 }
 
-ObjectBinder::ObjectBinder(Base* obj)
+ObjectBinder::ObjectBinder(Object* obj)
   : object(obj)
 {
   _Bind(obj);
@@ -154,12 +155,12 @@ ObjectBinder::~ObjectBinder()
   _Unbind(this->object);
 }
 
-void ObjectBinder::reset(Base* obj) {
+void ObjectBinder::reset(Object* obj) {
   _Unbind(this->object);
   _Bind(this->object = obj);
 }
 
-Base* ObjectBinder::get() const {
+Object* ObjectBinder::get() const {
   return this->object;
 }
 
@@ -171,19 +172,27 @@ void resume() {
   isPaused = false;
 }
 
-void addObject(objects::Base* object) {
-  if( _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
+void addObject(objects::Object* object) {
+  if( !isPaused && _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
     _Collect();
   }
 
   mAppend(object);
 }
 
-ObjectBinder bind(objects::Base* object) {
+ObjectBinder make_binder(objects::Object* object) {
   return ObjectBinder(object);
 }
 
-void do_collect_force() {
+void bind(objects::Object* obj) {
+  _Bind(obj);
+}
+
+void unbind(objects::Object* obj) {
+  _Unbind(obj);
+}
+
+void doCollectForce() {
   _Collect();
 }
 
@@ -200,6 +209,52 @@ void clean() {
     thread->join();
     delete thread;
   }
+}
+
+objects::Object* cloneObject(objects::Object* obj) {
+  switch( obj->type.kind ) {
+    case Type::None:
+      return newObject<None>();
+    
+    case Type::Int:
+      return newObject<Int>(obj->as<Int>()->value);
+    
+    case Type::Float:
+      return newObject<Float>(obj->as<Float>()->value);
+
+    case Type::USize:
+      return newObject<USize>(obj->as<USize>()->value);
+    
+    case Type::Bool:
+      return newObject<Bool>(obj->as<Bool>()->value);
+    
+    case Type::Char:
+      return newObject<Char>(obj->as<Char>()->value);
+    
+    case Type::String:
+      return newObject<String>(obj->as<String>()->value);
+
+    case Type::Vector: {
+      auto x = newObject<Vector>();
+
+      for( auto&& e : obj->as<Vector>()->elements )
+        x->append(cloneObject(e));
+
+      return x;
+    }
+
+    case Type::Dict: {
+      auto x = newObject<Dict>();
+
+      for( auto&& [k, v] : obj->as<Dict>()->elements )
+        x->append(cloneObject(k), cloneObject(v));
+
+      return x;
+    }
+  }
+
+  alert;
+  return nullptr;
 }
 
 } // namespace metro::gc

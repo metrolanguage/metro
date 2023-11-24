@@ -17,7 +17,7 @@ using USize   = _Primitive<size_t,         Type::USize>;
 using Char    = _Primitive<char16_t,       Type::Char>;
 using String  = _Primitive<std::u16string, Type::String>;
 
-struct Base {
+struct Object {
   Type type;
   bool isMarked;
 
@@ -28,18 +28,36 @@ struct Base {
 
   virtual std::string to_string() const = 0;
 
-  virtual ~Base() { }
+  virtual ~Object() { }
 
 protected:
-  Base(Type type)
+  Object(Type type)
     : type(std::move(type)),
       isMarked(false)
   {
   }
 };
 
+struct None : Object {
+  std::string to_string() const {
+    return "none";
+  }
+
+  static None* getNone() {
+    return &_none;
+  }
+
+  None()
+    : Object(Type::None)
+  {
+  }
+
+private:
+  static None _none;
+};
+
 template <class T, Type::Kind k>
-struct _Primitive : Base {
+struct _Primitive : Object {
   T value;
 
   std::string to_string() const {
@@ -47,14 +65,14 @@ struct _Primitive : Base {
   }
 
   _Primitive(T val = T{ })
-    : Base(k),
+    : Object(k),
       value(val)
   {
   }
 };
 
 template <>
-struct _Primitive<std::u16string, Type::String> : Base {
+struct _Primitive<std::u16string, Type::String> : Object {
   std::u16string value;
 
   std::string to_string() const {
@@ -62,8 +80,14 @@ struct _Primitive<std::u16string, Type::String> : Base {
   }
 
   _Primitive(std::u16string const& val = u"")
-    : Base(Type::String),
+    : Object(Type::String),
       value(val)
+  {
+  }
+
+  _Primitive(std::string const& str)
+    : Object(Type::String),
+      value(conv.from_bytes(str))
   {
   }
 
@@ -73,7 +97,7 @@ private:
 };
 
 template <>
-struct _Primitive<char16_t, Type::Char> : Base {
+struct _Primitive<char16_t, Type::Char> : Object {
   char16_t value;
 
   std::string to_string() const {
@@ -81,19 +105,19 @@ struct _Primitive<char16_t, Type::Char> : Base {
   }
 
   _Primitive(char16_t val = 0)
-    : Base(Type::Char),
+    : Object(Type::Char),
       value(val)
   {
   }
 };
 
-struct Vector : Base {
-  std::vector<Base*> elements;
+struct Vector : Object {
+  std::vector<Object*> elements;
 
   auto begin() const { return this->elements.begin(); }
   auto end() const { return this->elements.end(); }
 
-  auto& append(Base* obj) {
+  auto& append(Object* obj) {
     return this->elements.emplace_back(obj);
   }
 
@@ -111,20 +135,20 @@ struct Vector : Base {
     return ret + ']';
   }
 
-  Vector(std::vector<Base*> elements = { })
-    : Base(Type::Vector),
+  Vector(std::vector<Object*> elements = { })
+    : Object(Type::Vector),
       elements(std::move(elements))
   {
   }
 };
 
-struct Dict : Base {
-  std::vector<std::pair<Base*, Base*>> elements;
+struct Dict : Object {
+  std::vector<std::pair<Object*, Object*>> elements;
 
   auto begin() const { return this->elements.begin(); }
   auto end() const { return this->elements.end(); }
 
-  auto& append(Base* key, Base* value) {
+  auto& append(Object* key, Object* value) {
     return this->elements.emplace_back(key, value);
   }
 
@@ -142,8 +166,8 @@ struct Dict : Base {
     return ret + '}';
   }
 
-  Dict(std::vector<std::pair<Base*, Base*>>&& elements = { })
-    : Base(Type::Dict),
+  Dict(std::vector<std::pair<Object*, Object*>>&& elements = { })
+    : Object(Type::Dict),
       elements(std::move(elements))
   {
   }
