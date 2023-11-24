@@ -6,7 +6,9 @@
 
 namespace metro {
 
-struct BuiltinFunc;
+namespace builtin {
+  struct BuiltinFunc;
+}
 
 enum class ASTKind {
   // factor
@@ -101,8 +103,8 @@ struct CallFunc : Base {
   std::vector<Base*> arguments;
 
   union {
-    Function* userdef;      // if user-defined
-    BuiltinFunc* builtin;   // if builtin
+    Function const* userdef;              // if user-defined
+    builtin::BuiltinFunc const* builtin;  // if builtin
   };
 
   std::string_view getName() const {

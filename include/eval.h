@@ -32,7 +32,7 @@ private:
     return !this->callStacks.empty();
   }
 
-  CallStack* getCurrentCallStack() const {
+  CallStack& getCurrentCallStack() {
     return *callStacks.rbegin();
   }
 

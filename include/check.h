@@ -7,7 +7,7 @@ namespace metro {
 class Checker {
 public:
 
-  Checker(AST::Base* root);
+  Checker(AST::Scope* root);
 
   void check(AST::Base* ast);
 
@@ -17,7 +17,7 @@ private:
   // find user-defined function
   AST::Function* findUserDefFunction(std::string_view name);
 
-  AST::Base* _root;
+  AST::Scope* _root;
 };
 
 } // namesapce metro

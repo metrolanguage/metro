@@ -5,6 +5,7 @@
 #include "SourceLoc.h"
 #include "lex.h"
 #include "parse.h"
+#include "check.h"
 #include "eval.h"
 
 namespace metro {
@@ -34,6 +35,10 @@ int Metro::main() {
   Parser parser{ token };
 
   auto ast = parser.parse();
+
+  Checker checker{ ast->as<AST::Scope>() };
+
+  checker.check(ast);
 
   Evaluator eval;
 
