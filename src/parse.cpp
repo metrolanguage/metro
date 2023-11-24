@@ -11,7 +11,34 @@ Parser::Parser(Token* token)
 }
 
 AST::Base* Parser::parse() {
-  
+  auto ast = new AST::Scope();
+
+  while( this->check() ) {
+    if( this->eat("def") ) {
+      auto func = new AST::Function(this->ate);
+
+      func->name_token = this->expectIdentifier();
+      
+      this->expect("(");
+
+      if( !this->eat(")") ) {
+        do {
+        } while( this->eat(",") );
+
+        this->expect(")");
+      }
+
+      func->scope = this->expectScope();
+
+      ast->statements.emplace_back(func);
+
+      continue;
+    }
+
+    ast->statements.emplace_back(this->stmt());
+  }
+
+  return ast;
 }
 
 AST::Base* Parser::factor() {
@@ -75,6 +102,15 @@ AST::Base* Parser::expr() {
   return this->add();
 }
 
+AST::Base* Parser::stmt() {
+
+  
+
+  auto x = this->expr();
+  this->expect(";");
+  return x;
+}
+
 bool Parser::check() {
   return this->token->kind != TokenKind::End;
 }
@@ -93,12 +129,51 @@ bool Parser::eat(std::string_view s) {
   return false;
 }
 
-void Parser::expect(std::string_view s) {
+Token* Parser::expect(std::string_view s) {
   if( !this->eat(s) )
     Error(this->token)
-      .setMessage("expect")
+      .setMessage("expected '" + std::string(s) + "'")
       .emit()
       .exit();
+
+  return this->ate;
+}
+
+Token* Parser::expectIdentifier() {
+  if( this->token->kind != TokenKind::Identifier ) {
+    Error(this->token)
+      .setMessage("expected identifier")
+      .emit()
+      .exit();
+  }
+
+  this->ate = this->token;
+  this->next();
+
+  return this->ate;
+}
+
+AST::Scope* Parser::expectScope() {
+  auto ast = new AST::Scope();
+
+  ast->token = this->expect("{");
+
+  if( this->eat("}") )
+    return ast;
+
+  bool closed = false;
+
+  while( !(closed = this->eat("}")) )
+    ast->statements.emplace_back(this->stmt());
+
+  if( !closed ) {
+    Error(ast->token)
+      .setMessage("scope never closed")
+      .emit()
+      .exit();
+  }
+
+  return ast;
 }
 
 } // namespace metro

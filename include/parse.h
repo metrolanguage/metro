@@ -27,7 +27,10 @@ private:
   Token* next();
   
   bool eat(std::string_view);
-  void expect(std::string_view);
+  Token* expect(std::string_view);
+
+  Token* expectIdentifier();
+  AST::Scope* expectScope();
 
   Token* token;
   Token* ate;

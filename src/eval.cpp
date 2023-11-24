@@ -14,6 +14,8 @@ Object* Evaluator::eval(AST::Base* ast) {
       return ast->as<AST::Value>()->object;
     }
 
+    
+
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
 
@@ -38,7 +40,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   auto expr = ast->as<AST::Expr>();
 
-  auto lhs = this->eval(expr->left);
+  auto lhs = gc::cloneObject(this->eval(expr->left));
   auto rhs = this->eval(expr->right);
 
   switch( expr->kind ) {

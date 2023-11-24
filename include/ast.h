@@ -5,7 +5,9 @@
 #include "object.h"
 
 namespace metro {
-  
+
+struct BuiltinFunc;
+
 enum class ASTKind {
   // factor
   Value,
@@ -97,13 +99,19 @@ struct Variable : Base {
 struct CallFunc : Base {
   std::vector<Base*> arguments;
 
+  union {
+    size_t index;           // if user-defined
+    BuiltinFunc* builtin;   // if builtin
+  };
+
   std::string_view getName() const {
     return this->token->str;
   }
 
   CallFunc(Token* token, std::vector<Base*> arguments = { })
     : Base(ASTKind::CallFunc, token),
-      arguments(std::move(arguments))
+      arguments(std::move(arguments)),
+      index(0)
   {
   }
 };
@@ -113,7 +121,7 @@ struct Expr : Base {
   Base* right;
   
   Expr(ASTKind kind, Token* op_token, Base* left, Base* right)
-    : Base(kind, op_token),
+    : Base(kind, op_token), // the op of "a op b"
       left(left),
       right(right)
   {
@@ -181,7 +189,33 @@ struct While : Base {
   }
 };
 
-struct Function
+struct Function : Base {
+  struct Argument {
+    Base* type;
+    Token* name;
+
+    Argument(Base* type, Token* name)
+      : type(type),
+        name(name)
+    {
+    }
+  };
+
+  Token* name_token;
+  std::vector<Argument> arguments;
+  Scope* scope;
+
+  std::string_view getName() const {
+    return this->name_token->str;
+  }
+
+  Function(Token* token)
+    : Base(ASTKind::Function, token),
+      name_token(nullptr),
+      scope(nullptr)
+  {
+  }
+};
 
 } // namespace AST
 
