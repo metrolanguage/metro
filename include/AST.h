@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "token.h"
-#include "object.h"
+#include "Token.h"
+#include "Object.h"
 
 namespace metro {
 
@@ -77,6 +77,26 @@ protected:
   }
 };
 
+struct WithName : Base {
+  std::string name;
+
+  std::string const& getName() const {
+    return this->name;
+  }
+
+  WithName(ASTKind kind, std::string const& name)
+    : Base(kind, nullptr),
+      name(name)
+  {
+  }
+
+protected:
+  WithName(ASTKind k, Token* t = nullptr)
+    : Base(k, t)
+  {
+  }
+};
+
 struct Value : Base {
   objects::Object* object;
 
@@ -87,13 +107,11 @@ struct Value : Base {
   }
 };
 
-struct Variable : Base {
-  std::string_view getName() const {
-    return this->token->str;
-  }
-
+struct Variable : WithName {
+  using WithName::WithName;
+  
   Variable(Token* token)
-    : Base(ASTKind::Variable, token)
+    : WithName(ASTKind::Variable, token)
   {
   }
 };
@@ -133,8 +151,8 @@ struct Expr : Base {
 struct Scope : Base {
   std::vector<Base*> statements;
 
-  Scope()
-    : Base(ASTKind::Scope)
+  Scope(Token* token)
+    : Base(ASTKind::Scope, token)
   {
   }
 };
@@ -181,12 +199,12 @@ struct Switch : Base {
 
 struct While : Base {
   Base* cond;
-  Base* scope;
+  Base* code;
 
   While(Token* token)
     : Base(ASTKind::While, token),
       cond(nullptr),
-      scope(nullptr)
+      code(nullptr)
   {
   }
 };

@@ -3,7 +3,7 @@
 #include <codecvt>
 #include <limits>
 #include <locale>
-#include "type.h"
+#include "Type.h"
 
 namespace metro::objects {
 

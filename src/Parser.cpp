@@ -1,17 +1,19 @@
-#include "parse.h"
+#include "alert.h"
 #include "Error.h"
-#include "gc.h"
+#include "GC.h"
+#include "Parser.h"
 
 namespace metro {
 
 Parser::Parser(Token* token)
   : token(token),
-    ate(nullptr)
+    ate(nullptr),
+    loopCounterDepth(0)
 {
 }
 
 AST::Base* Parser::parse() {
-  auto ast = new AST::Scope();
+  auto ast = new AST::Scope(nullptr);
 
   while( this->check() ) {
     if( this->eat("def") ) {
@@ -85,6 +87,12 @@ AST::Base* Parser::factor() {
     .exit();
 }
 
+AST::Base* Parser::indexref() {
+
+
+  todo_impl; 
+}
+
 AST::Base* Parser::add() {
   auto x = this->factor();
 
@@ -104,7 +112,58 @@ AST::Base* Parser::expr() {
 
 AST::Base* Parser::stmt() {
 
-  
+  if( this->token->str == "{" ) {
+    return this->expectScope();
+  }
+
+  if( this->eat("if") ) {
+    auto ast = new AST::If(this->ate);
+
+    ast->cond = this->expr();
+    ast->case_true = this->stmt();
+
+    if( this->eat("else") ) {
+      ast->case_false = this->stmt();
+    }
+
+    return ast;
+  }
+
+  if( this->eat("while") ) {
+    auto ast = new AST::While(this->ate);
+
+    ast->cond = this->expr();
+    ast->code = this->stmt();
+
+    return ast;
+  }
+
+  /*
+   * make for-loop:
+   * create a new scope and use while-statement.
+   *
+   * 
+   */
+  if( this->eat("for") ) {
+    auto scope = new AST::Scope(this->ate);
+
+    // make loop counter
+    auto counterName = "@count" + std::to_string(this->loopCounterDepth);
+
+    auto& assign = scope->statements.emplace_back(
+        new AST::Expr(ASTKind::Assignment, nullptr,
+            new AST::Variable(ASTKind::Variable, counterName),
+            new AST::Value(nullptr, new objects::Int(0))));
+
+    auto ast = new AST::While(this->ate);
+
+    auto iter = this->expr();
+
+    // todo
+
+    alert;
+    exit(99);
+  }
 
   auto x = this->expr();
   this->expect(";");
@@ -154,9 +213,7 @@ Token* Parser::expectIdentifier() {
 }
 
 AST::Scope* Parser::expectScope() {
-  auto ast = new AST::Scope();
-
-  ast->token = this->expect("{");
+  auto ast = new AST::Scope(this->expect("{"));
 
   if( this->eat("}") )
     return ast;

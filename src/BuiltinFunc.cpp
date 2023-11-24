@@ -2,7 +2,7 @@
 #include <sstream>
 #include <vector>
 #include "BuiltinFunc.h"
-#include "gc.h"
+#include "GC.h"
 
 #define DEF(name, argc) \
   BuiltinFunc(name, argc, [] (std::vector<Object*> args) -> Object* {

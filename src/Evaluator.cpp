@@ -1,9 +1,9 @@
 #include <iostream>
 #include <sstream>
 #include "alert.h"
-#include "eval.h"
-#include "gc.h"
 #include "BuiltinFunc.h"
+#include "Evaluator.h"
+#include "GC.h"
 
 namespace metro {
 

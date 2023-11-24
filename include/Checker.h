@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ast.h"
+#include "AST.h"
 
 namespace metro {
 
@@ -15,7 +15,7 @@ private:
 
   //
   // find user-defined function
-  AST::Function* findUserDefFunction(std::string_view name);
+  AST::Function const* findUserDefFunction(std::string_view name);
 
   AST::Scope* _root;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ast.h"
+#include "AST.h"
 
 namespace metro {
 
@@ -13,7 +13,8 @@ public:
   AST::Base* parse();
 
   AST::Base* factor();
-  // AST::Base* mul();
+  AST::Base* indexref();
+  AST::Base* mul();
   AST::Base* add();
   AST::Base* expr();
 
@@ -34,6 +35,8 @@ private:
 
   Token* token;
   Token* ate;
+
+  size_t loopCounterDepth;
 };
 
 } // namespace metro

@@ -1,13 +1,15 @@
 #include <iostream>
+
 #include "metro.h"
-#include "gc.h"
 #include "color.h"
 #include "SourceLoc.h"
-#include "lex.h"
-#include "parse.h"
-#include "check.h"
-#include "eval.h"
 #include "Error.h"
+
+#include "Lexer.h"
+#include "Parser.h"
+#include "Checker.h"
+#include "Evaluator.h"
+#include "GC.h"
 
 namespace metro {
 

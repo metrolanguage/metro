@@ -1,8 +1,8 @@
 #pragma once
 
 #include <map>
-#include "ast.h"
-#include "object.h"
+#include "AST.h"
+#include "Object.h"
 
 namespace metro {
 

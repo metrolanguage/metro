@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string>
-#include "token.h"
-#include "ast.h"
+#include "AST.h"
 
 namespace metro {
 
