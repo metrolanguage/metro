@@ -50,13 +50,13 @@ AST::Base* Parser::factor() {
     case TokenKind::Int: {
       this->next();
       return new AST::Value(tok,
-        gc::newObject<objects::Int>(std::stoi(std::string(tok->str))));
+        new objects::Int(std::stoi(std::string(tok->str))));
     }
 
     case TokenKind::String: {
       this->next();
       return new AST::Value(tok,
-        gc::newObject<objects::String>(std::string(tok->str)));
+        new objects::String(std::string(tok->str)));
     }
 
     case TokenKind::Identifier: {

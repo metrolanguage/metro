@@ -2,49 +2,24 @@
 
 #include "Object.h"
 
-namespace metro::gc {
+namespace metro::GC {
 
-struct ObjectBinder {
-  void reset(objects::Object*);
-  objects::Object* get() const;
+using namespace objects;
 
-  ObjectBinder(objects::Object*);
-  ~ObjectBinder();
+void enable();
+bool isEnabled();
 
-private:
-  objects::Object* object;
-};
-
-void pause();
-void resume();
-
-void addObject(objects::Object*);
-ObjectBinder make_binder(objects::Object*);
-
-void bind(objects::Object*);
-void unbind(objects::Object*);
+void bind(Object*);
+void unbind(Object*);
 
 void doCollectForce();
-void clean();
+void exitGC();
 
-objects::Object* cloneObject(objects::Object*);
+Object* _registerObject(Object* obj);
 
-template <std::derived_from<objects::Object> T, class... Ts>
-T* newObject(Ts&&... args) {
-  auto obj = new T(std::forward<Ts>(args)...);
-
-  addObject(obj);
-
-  return obj;
-}
-
-template <std::derived_from<objects::Object> T, class... Ts>
+template <std::derived_from<Object> T, class... Ts>
 T* newBinded(Ts&&... args) {
-  auto obj = newObject<T>(std::forward<Ts>(args)...);
-
-  bind(obj);
-
-  return obj;
+  return static_cast<T*>(_registerObject(new T(std::forward<Ts>(args)...)));
 }
 
-} // namespace metro::gc
+} // namespace metro::GC

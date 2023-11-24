@@ -29,6 +29,8 @@ Metro::~Metro()
 
 int Metro::main() {
 
+  GC::enable();
+
   SourceLoc source{ "test.metro" };
 
   Lexer lexer{ source };
@@ -53,8 +55,8 @@ int Metro::main() {
 
   eval.eval(ast);
 
-  gc::doCollectForce();
-  gc::clean();
+  GC::doCollectForce();
+  GC::exitGC();
 
   return 0;
 }

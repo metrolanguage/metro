@@ -25,7 +25,7 @@ static std::vector<BuiltinFunc> const _all_functions {
 
     std::cout << str;
 
-    return gc::newObject<Int>((int)str.length());
+    return new Int((int)str.length());
   ENDEF
 
   DEF("println", -1)
@@ -38,7 +38,7 @@ static std::vector<BuiltinFunc> const _all_functions {
 
     std::cout << str << std::endl;
 
-    return gc::newObject<Int>((int)str.length() + 1);
+    return new Int((int)str.length() + 1);
   ENDEF
 };
 

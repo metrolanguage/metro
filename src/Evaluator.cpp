@@ -57,11 +57,11 @@ Object* Evaluator::eval(AST::Base* ast) {
         auto name = assign->left->as<AST::Variable>()->getName();
 
         if( !storage.contains(name) ) {
-          gc::bind(storage[name] = value);
+          GC::bind(storage[name] = value);
           return value;
         }
         else
-          gc::unbind(storage[name]);
+          GC::unbind(storage[name]);
       }
 
       return this->evalAsLeft(assign->left) = value;
@@ -79,7 +79,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   auto expr = ast->as<AST::Expr>();
 
-  auto lhs = gc::cloneObject(this->eval(expr->left));
+  auto lhs = this->eval(expr->left)->clone();
   auto rhs = this->eval(expr->right);
 
   switch( expr->kind ) {
@@ -115,7 +115,7 @@ void Evaluator::pop_stack() {
   auto& stack = this->getCurrentCallStack();
 
   for( auto&& [_, lvar] : stack.storage ) {
-    gc::unbind(lvar);
+    GC::unbind(lvar);
   }
 
   this->callStacks.pop_back();

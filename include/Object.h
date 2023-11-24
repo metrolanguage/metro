@@ -27,20 +27,21 @@ struct Object {
   }
 
   virtual std::string to_string() const = 0;
+  virtual Object* clone() const = 0;
 
   virtual ~Object() { }
 
 protected:
-  Object(Type type)
-    : type(std::move(type)),
-      isMarked(false)
-  {
-  }
+  Object(Type type);
 };
 
 struct None : Object {
   std::string to_string() const {
     return "none";
+  }
+
+  None* clone() const {
+    return new None;
   }
 
   static None* getNone() {
@@ -64,6 +65,10 @@ struct _Primitive : Object {
     return std::to_string(this->value);
   }
 
+  _Primitive* clone() const {
+    return new _Primitive<T, k>(this->value);
+  }
+
   _Primitive(T val = T{ })
     : Object(k),
       value(val)
@@ -77,6 +82,10 @@ struct _Primitive<std::u16string, Type::String> : Object {
 
   std::string to_string() const {
     return conv.to_bytes(this->value);
+  }
+
+  String* clone() const {
+    return new String(this->value);
   }
 
   _Primitive(std::u16string const& val = u"")
@@ -101,7 +110,11 @@ struct _Primitive<char16_t, Type::Char> : Object {
   char16_t value;
 
   std::string to_string() const {
-    return String(std::u16string(1, this->value)).to_string();
+    return String::conv.to_bytes(std::u16string(1, this->value));
+  }
+
+  Char* clone() const {
+    return new Char(this->value);
   }
 
   _Primitive(char16_t val = 0)
@@ -135,6 +148,15 @@ struct Vector : Object {
     return ret + ']';
   }
 
+  Vector* clone() const {
+    auto vec = new Vector();
+
+    for( auto&& e : this->elements )
+      vec->append(e->clone());
+    
+    return vec;
+  }
+
   Vector(std::vector<Object*> elements = { })
     : Object(Type::Vector),
       elements(std::move(elements))
@@ -164,6 +186,15 @@ struct Dict : Object {
     }
 
     return ret + '}';
+  }
+
+  Dict* clone() const {
+    auto dict = new Dict();
+
+    for( auto&& [k, v] : this->elements )
+      dict->append(k->clone(), v->clone());
+
+    return dict;
   }
 
   Dict(std::vector<std::pair<Object*, Object*>>&& elements = { })

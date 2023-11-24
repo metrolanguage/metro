@@ -22,14 +22,14 @@
 
 #define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
 
-namespace metro::gc {
+namespace metro::GC {
 
 using namespace objects;
 
 namespace {
 
-bool isPaused;
-bool isBusy;
+bool _isEnabled;
+bool _isBusy;
 std::mutex mtx;
 std::thread* thread;
 size_t mark_count;
@@ -41,14 +41,13 @@ std::vector<Object*>::iterator mFind(Object* object) {
   return std::find(root.begin(), root.end(), object);
 }
 
-void mAppend(Object* object) {
+Object* mAppend(Object* object) {
   for( auto&& p : _Memory )
     if( p == nullptr ) {
-      p = object;
-      return;
+      return p = object;
     }
 
-  _Memory.emplace_back(object);
+  return _Memory.emplace_back(object);
 }
 
 /* only delete a pointer from vector. don't call free or delete. */
@@ -65,6 +64,8 @@ void _Bind(Object* object) {
 }
 
 void _Unbind(Object* object) {
+  alertmsg("unbind: " << object);
+
   if( auto it = std::find(root.cbegin(), root.cend(), object); it != root.cend() ) {
     LOCK(
       root.erase(it);
@@ -126,11 +127,11 @@ void _CollectThreadFunc() {
       pObj = nullptr;
     }
 
-  isBusy = false;
+  _isBusy = false;
 }
 
 void _Collect() {
-  if( isBusy )
+  if( _isBusy )
     return;
 
   if( thread ) {
@@ -138,123 +139,69 @@ void _Collect() {
     delete thread;
   }
 
-  isBusy = true;
+  _isBusy = true;
   thread = new std::thread(_CollectThreadFunc);
 }
 
+} // unonymous
+
+void enable() {
+  _isEnabled = true;
 }
 
-ObjectBinder::ObjectBinder(Object* obj)
-  : object(obj)
-{
-  _Bind(obj);
+bool isEnabled() {
+  return _isEnabled;
 }
 
-ObjectBinder::~ObjectBinder()
-{
-  _Unbind(this->object);
-}
+Object* _registerObject(Object* object) {
+  if( !isEnabled() )
+    return object;
 
-void ObjectBinder::reset(Object* obj) {
-  _Unbind(this->object);
-  _Bind(this->object = obj);
-}
-
-Object* ObjectBinder::get() const {
-  return this->object;
-}
-
-void pause() {
-  isPaused = true;
-}
-
-void resume() {
-  isPaused = false;
-}
-
-void addObject(objects::Object* object) {
-  if( !isPaused && _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
+  if( _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
     _Collect();
   }
 
-  mAppend(object);
+  return mAppend(object);
 }
 
-ObjectBinder make_binder(objects::Object* object) {
-  return ObjectBinder(object);
-}
+void bind(Object* obj) {
+  if( !isEnabled() )
+    return;
 
-void bind(objects::Object* obj) {
   _Bind(obj);
 }
 
-void unbind(objects::Object* obj) {
+void unbind(Object* obj) {
+  if( !isEnabled() )
+    return;
+
   _Unbind(obj);
 }
 
 void doCollectForce() {
+  if( !isEnabled() )
+    return;
+
   _Collect();
 }
 
-void clean() {
-  for( auto&& obj : _Memory )
-    if( obj ) {
-      delete obj;
-    }
-
-  _Memory.clear();
-  root.clear();
+void exitGC() {
+  if( !isEnabled() )
+    return;
 
   if( thread ) {
     thread->join();
     delete thread;
   }
-}
 
-objects::Object* cloneObject(objects::Object* obj) {
-  switch( obj->type.kind ) {
-    case Type::None:
-      return newObject<None>();
-    
-    case Type::Int:
-      return newObject<Int>(obj->as<Int>()->value);
-    
-    case Type::Float:
-      return newObject<Float>(obj->as<Float>()->value);
-
-    case Type::USize:
-      return newObject<USize>(obj->as<USize>()->value);
-    
-    case Type::Bool:
-      return newObject<Bool>(obj->as<Bool>()->value);
-    
-    case Type::Char:
-      return newObject<Char>(obj->as<Char>()->value);
-    
-    case Type::String:
-      return newObject<String>(obj->as<String>()->value);
-
-    case Type::Vector: {
-      auto x = newObject<Vector>();
-
-      for( auto&& e : obj->as<Vector>()->elements )
-        x->append(cloneObject(e));
-
-      return x;
-    }
-
-    case Type::Dict: {
-      auto x = newObject<Dict>();
-
-      for( auto&& [k, v] : obj->as<Dict>()->elements )
-        x->append(cloneObject(k), cloneObject(v));
-
-      return x;
+  for( auto&& obj : _Memory ) {
+    if( obj ) {
+      delete obj;
     }
   }
 
-  alert;
-  return nullptr;
+  _Memory.clear();
+  root.clear();
 }
 
 } // namespace metro::gc
