@@ -70,7 +70,7 @@ Object* Evaluator::eval(AST::Base* ast) {
     case ASTKind::Scope: {
       auto scope = ast->as<AST::Scope>();
 
-      for( auto&& x : scope->statements )
+      for( auto&& x : scope->list )
         this->eval(x);
 
       return None::getNone();

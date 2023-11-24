@@ -32,12 +32,12 @@ AST::Base* Parser::parse() {
 
       func->scope = this->expectScope();
 
-      ast->statements.emplace_back(func);
+      ast->list.emplace_back(func);
 
       continue;
     }
 
-    ast->statements.emplace_back(this->stmt());
+    ast->list.emplace_back(this->stmt());
   }
 
   return ast;
@@ -150,7 +150,7 @@ AST::Base* Parser::stmt() {
     // make loop counter
     auto counterName = "@count" + std::to_string(this->loopCounterDepth);
 
-    auto& assign = scope->statements.emplace_back(
+    auto& assign = scope->list.emplace_back(
         new AST::Expr(ASTKind::Assignment, nullptr,
             new AST::Variable(ASTKind::Variable, counterName),
             new AST::Value(nullptr, new objects::Int(0))));
@@ -221,7 +221,7 @@ AST::Scope* Parser::expectScope() {
   bool closed = false;
 
   while( !(closed = this->eat("}")) )
-    ast->statements.emplace_back(this->stmt());
+    ast->list.emplace_back(this->stmt());
 
   if( !closed ) {
     Error(ast->token)

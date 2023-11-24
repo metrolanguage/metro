@@ -5,8 +5,8 @@ BUILD			:= 	build
 INCLUDE		:= 	include
 SOURCE		:= 	src
 
-CC			:= gcc
-CXX			:= g++
+CC			:= clang
+CXX			:= clang++
 
 OPTI			?= -O0 -g
 COMMONFLAGS		:= $(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)

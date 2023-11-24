@@ -40,7 +40,7 @@ void Checker::check(AST::Base* ast) {
     }
 
     case ASTKind::Scope: {
-      for( auto&& x : ast->as<AST::Scope>()->statements )
+      for( auto&& x : ast->as<AST::Scope>()->list )
         this->check(x);
         
       break;
@@ -67,7 +67,7 @@ void Checker::check(AST::Base* ast) {
 }
 
 AST::Function const* Checker::findUserDefFunction(std::string_view name) {
-  for( auto&& ast : this->_root->statements )
+  for( auto&& ast : this->_root->list )
     if( ast->kind == ASTKind::Function &&
           ast->as<AST::Function>()->getName() == name )
       return ast->as<AST::Function>();

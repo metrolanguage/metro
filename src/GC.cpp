@@ -37,10 +37,6 @@ size_t mark_count;
 std::vector<Object*> _Memory;
 std::vector<Object*> root; /* binded objects for local-v */
 
-std::vector<Object*>::iterator mFind(Object* object) {
-  return std::find(root.begin(), root.end(), object);
-}
-
 Object* mAppend(Object* object) {
   for( auto&& p : _Memory )
     if( p == nullptr ) {
@@ -48,11 +44,6 @@ Object* mAppend(Object* object) {
     }
 
   return _Memory.emplace_back(object);
-}
-
-/* only delete a pointer from vector. don't call free or delete. */
-void mDelete(Object* object) {
-  *mFind(object) = nullptr;
 }
 
 void _Bind(Object* object) {

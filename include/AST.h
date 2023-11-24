@@ -105,6 +105,11 @@ struct Value : Base {
       object(object)
   {
   }
+
+  ~Value()
+  {
+    delete this->object;
+  }
 };
 
 struct Variable : WithName {
@@ -134,6 +139,12 @@ struct CallFunc : Base {
       builtin(nullptr)
   {
   }
+
+  ~CallFunc()
+  {
+    for( auto&& arg : this->arguments )
+      delete arg;
+  }
 };
 
 struct Expr : Base {
@@ -146,14 +157,26 @@ struct Expr : Base {
       right(right)
   {
   }
+
+  ~Expr()
+  {
+    delete this->left;
+    delete this->right;
+  }
 };
 
 struct Scope : Base {
-  std::vector<Base*> statements;
+  std::vector<Base*> list;
 
   Scope(Token* token)
     : Base(ASTKind::Scope, token)
   {
+  }
+
+  ~Scope()
+  {
+    for( auto&& x : this->list )
+      delete x;
   }
 };
 
@@ -169,6 +192,13 @@ struct If : Base {
       case_false(nullptr)
   {
   }
+
+  ~If()
+  {
+    delete this->cond;
+    delete this->case_true;
+    delete this->case_false;
+  }
 };
 
 struct Switch : Base {
@@ -181,19 +211,30 @@ struct Switch : Base {
         scope(scope)
     {
     }
+
+    ~Case()
+    {
+      delete this->to_compare;
+      delete this->scope;
+    }
   };
 
   Base* expr;
   std::vector<Case> cases;
 
-  Case& append(Base* toCompare, Base* scope) {
-    return this->cases.emplace_back(toCompare, scope);
+  Case& append(Base* to_compare, Base* scope) {
+    return this->cases.emplace_back(to_compare, scope);
   }
 
   Switch(Token* token)
     : Base(ASTKind::Switch, token),
       expr(nullptr)
   {
+  }
+
+  ~Switch()
+  {
+    delete this->expr;
   }
 };
 
@@ -207,6 +248,12 @@ struct While : Base {
       code(nullptr)
   {
   }
+
+  ~While()
+  {
+    delete this->cond;
+    delete this->code;
+  }
 };
 
 struct Function : Base {
@@ -218,6 +265,11 @@ struct Function : Base {
       : type(type),
         name(name)
     {
+    }
+
+    ~Argument()
+    {
+      delete this->type;
     }
   };
 
@@ -234,6 +286,11 @@ struct Function : Base {
       name_token(nullptr),
       scope(nullptr)
   {
+  }
+
+  ~Function()
+  {
+    delete this->scope;
   }
 };
 
