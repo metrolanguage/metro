@@ -26,8 +26,8 @@ public:
 
   Evaluator() { }
 
-  objects::Object* eval(AST::Base* ast);
-  objects::Object*& evalAsLeft(AST::Base* ast);
+  Object* eval(AST::Base* ast);
+  Object*& evalAsLeft(AST::Base* ast);
 
 
 private:
@@ -49,6 +49,8 @@ private:
 
   CallStack& push_stack(AST::Function const* func);
   void pop_stack();
+
+  Object* evalIndexRef(AST::Expr* ast);
 
   Storage  globalStorage;
   std::vector<CallStack> callStacks;

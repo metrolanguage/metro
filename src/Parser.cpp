@@ -46,6 +46,10 @@ AST::Base* Parser::parse() {
 AST::Base* Parser::factor() {
   auto tok = this->token;
 
+  if( this->eat("[") ) {
+    
+  }
+
   switch( tok->kind ) {
     case TokenKind::Int: {
       this->next();
@@ -88,17 +92,73 @@ AST::Base* Parser::factor() {
 }
 
 AST::Base* Parser::indexref() {
+  auto x = this->factor();
 
+  while( this->eat("[") ) {
+    x = new AST::Expr(ASTKind::IndexRef, this->ate, x, this->expr());
+    this->expect("]");
+  }
 
-  todo_impl; 
+  return x;
+}
+
+AST::Base* Parser::memberaccess() {
+  auto x = this->indexref();
+
+  while( this->eat(".") ) {
+    auto tok = this->ate;
+
+    auto y = this->indexref();
+
+    if( y->kind == ASTKind::CallFunc ) {
+      auto cf = y->as<AST::CallFunc>();
+
+      cf->arguments.insert(cf->arguments.begin(), x);
+      x = cf;
+    }
+    else {
+      x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
+    }
+  }
+
+  return x;
+}
+
+AST::Base* Parser::unary() {
+
+  if( this->eat("-") ) {
+    return new AST::Expr(ASTKind::Sub, this->ate,
+      new AST::Value(nullptr, new objects::Int(0)), this->memberaccess());
+  }
+
+  return this->memberaccess();
+}
+
+AST::Base* Parser::mul() {
+  auto x = this->unary();
+
+  while( this->check() ) {
+    if( this->eat("*") )
+      x = new AST::Expr(ASTKind::Mul, this->ate, x, this->unary());
+    else if( this->eat("/") )
+      x = new AST::Expr(ASTKind::Div, this->ate, x, this->unary());
+    else if( this->eat("%") )
+      x = new AST::Expr(ASTKind::Mod, this->ate, x, this->unary());
+    else
+      break;
+  }
+
+  return x;
 }
 
 AST::Base* Parser::add() {
-  auto x = this->factor();
+  auto x = this->mul();
 
   while( this->check() ) {
     if( this->eat("+") )
-      x = new AST::Expr(ASTKind::Add, this->ate, x, this->factor());
+      x = new AST::Expr(ASTKind::Add, this->ate, x, this->mul());
+    else if( this->eat("-") )
+      x = new AST::Expr(ASTKind::Add, this->ate, x, this->mul());
     else
       break;
   }

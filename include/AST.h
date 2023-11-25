@@ -13,11 +13,14 @@ namespace builtin {
 enum class ASTKind {
   // factor
   Value,
+  Array,
   Variable,
   CallFunc,
   
   // member access
   MemberAccess,
+
+  IndexRef,
 
   // expr
   Add,
@@ -118,6 +121,21 @@ struct Variable : WithName {
   Variable(Token* token)
     : WithName(ASTKind::Variable, token)
   {
+  }
+};
+
+struct Array : Base {
+  std::vector<Base*> elements;
+
+  Array(Token* token)
+    : Base(ASTKind::Array, token)
+  {
+  }
+
+  ~Array()
+  {
+    for( auto&& e : this->elements )
+      delete e;
   }
 };
 

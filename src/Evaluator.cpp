@@ -4,6 +4,8 @@
 #include "BuiltinFunc.h"
 #include "Evaluator.h"
 #include "GC.h"
+#include "Utils.h"
+#include "Error.h"
 
 namespace metro {
 
@@ -45,6 +47,26 @@ Object* Evaluator::eval(AST::Base* ast) {
       }
 
       return cf->builtin->call(std::move(args));
+    }
+
+    case ASTKind::MemberAccess: {
+      auto x = ast->as<AST::Expr>();
+
+      auto obj = this->eval(x->left);
+
+      auto member = x->right;
+      AST::Base* indexes = nullptr;
+
+      if( member->kind == ASTKind::IndexRef ) {
+        indexes = member->as<AST::Expr>()->right;
+        member = member->as<AST::Expr>()->left;
+      }
+
+      Error(member)
+        .setMessage("object of type '" + obj->type.to_string()
+          + "' don't have a member '" +  + "'")
+        .emit()
+        .exit();
     }
 
     case ASTKind::Assignment: {
@@ -120,5 +142,10 @@ void Evaluator::pop_stack() {
 
   this->callStacks.pop_back();
 }
+
+Object* Evaluator::evalIndexRef(AST::Expr* ast) {
+  
+}
+
 
 } // namespace metro
