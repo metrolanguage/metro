@@ -19,6 +19,13 @@ void Checker::check(AST::Base* ast) {
     case ASTKind::Variable:
       break;
 
+    case ASTKind::Array: {
+      for( auto&& x : ast->as<AST::Array>()->elements )
+        this->check(x);
+
+      break;
+    }
+
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
 

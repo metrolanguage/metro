@@ -26,6 +26,15 @@ Object* Evaluator::eval(AST::Base* ast) {
         this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
     }
 
+    case ASTKind::Array: {
+      auto obj = new Vector();
+
+      for( auto&& e : ast->as<AST::Array>()->elements )
+        obj->append(this->eval(e));
+      
+      return obj;
+    }
+
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
 
@@ -49,6 +58,9 @@ Object* Evaluator::eval(AST::Base* ast) {
       return cf->builtin->call(std::move(args));
     }
 
+    case ASTKind::IndexRef:
+      return this->evalIndexRef(ast->as<AST::Expr>());
+
     case ASTKind::MemberAccess: {
       auto x = ast->as<AST::Expr>();
 
@@ -57,10 +69,8 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto member = x->right;
       AST::Base* indexes = nullptr;
 
-      if( member->kind == ASTKind::IndexRef ) {
-        indexes = member->as<AST::Expr>()->right;
+      while( member->kind == ASTKind::IndexRef )
         member = member->as<AST::Expr>()->left;
-      }
 
       Error(member)
         .setMessage("object of type '" + obj->type.to_string()
@@ -144,7 +154,7 @@ void Evaluator::pop_stack() {
 }
 
 Object* Evaluator::evalIndexRef(AST::Expr* ast) {
-  
+
 }
 
 

@@ -47,7 +47,17 @@ AST::Base* Parser::factor() {
   auto tok = this->token;
 
   if( this->eat("[") ) {
-    
+    auto ast = new AST::Array(tok);
+
+    if( !this->eat("]") ) {
+      do {
+        ast->elements.emplace_back(this->expr());
+      } while( this->eat(",") );
+
+      this->expect("]");
+    }
+
+    return ast;
   }
 
   switch( tok->kind ) {
@@ -118,6 +128,14 @@ AST::Base* Parser::memberaccess() {
     }
     else {
       x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
+
+      while( y->kind == ASTKind::IndexRef )
+        y = y->as<AST::Expr>()->left;
+      
+      if( y->kind != ASTKind::Variable )
+        Error(y)
+          .setMessage("expected identifier")
+          .emit();
     }
   }
 
@@ -166,8 +184,44 @@ AST::Base* Parser::add() {
   return x;
 }
 
+AST::Base* Parser::shift() {
+
+}
+
+AST::Base* Parser::compare() {
+
+}
+
+AST::Base* Parser::equality() {
+
+}
+
+AST::Base* Parser::bitAND() {
+
+}
+
+AST::Base* Parser::bitOR() {
+
+}
+
+AST::Base* Parser::bitXOR() {
+
+}
+
+AST::Base* Parser::logAND() {
+
+}
+
+AST::Base* Parser::logOR() {
+
+}
+
+AST::Base* Parser::assign() {
+  
+}
+
 AST::Base* Parser::expr() {
-  return this->add();
+  return this->assign();
 }
 
 AST::Base* Parser::stmt() {
