@@ -29,6 +29,15 @@ enum class ASTKind {
   Div,
   Mod,
 
+  LShift,
+  RShift,
+
+  Bigger,         // a >  b
+  BiggerOrEqual,  // a >= b
+
+  Equal,
+  NotEqual,
+
   // bit calc
   BitAND,   // &
   BitXOR,   // ^

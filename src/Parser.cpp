@@ -185,39 +185,106 @@ AST::Base* Parser::add() {
 }
 
 AST::Base* Parser::shift() {
+  auto x = this->add();
 
+  while( this->check() ) {
+    if( this->eat("<<") )
+      x = new AST::Expr(ASTKind::LShift, this->ate, x, this->add());
+    else if( this->eat(">>") )
+      x = new AST::Expr(ASTKind::RShift, this->ate, x, this->add());
+    else
+      break;
+  }
+
+  return x;
 }
 
 AST::Base* Parser::compare() {
+  auto x = this->shift();
 
+  while( this->check() ) {
+    if( this->eat(">") )
+      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->shift());
+    else if( this->eat("<") )
+      x = new AST::Expr(ASTKind::Bigger, this->ate, this->shift(), x);
+    else if( this->eat(">=") )
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->shift());
+    else if( this->eat("<=") )
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->shift(), x);
+    else
+      break;
+  }
+  
+  return x;
 }
 
 AST::Base* Parser::equality() {
+  auto x = this->logAND();
 
+  while( this->check() ) {
+    if( this->eat("==") )
+      x = new AST::Expr(ASTKind::Equal, this->ate, x, this->logAND());
+    else if( this->eat("!=") )
+      x = new AST::Expr(ASTKind::NotEqual, this->ate, x, this->logAND());
+    else
+      break;
+  }
+  
+  return x;
 }
 
 AST::Base* Parser::bitAND() {
+  auto x = this->equality();
 
+  while( this->eat("&") )
+    x = new AST::Expr(ASTKind::BitAND, this->ate, x, this->equality());
+  
+  return x;
 }
 
 AST::Base* Parser::bitOR() {
+  auto x = this->bitAND();
 
+  while( this->eat("|") )
+    x = new AST::Expr(ASTKind::BitOR, this->ate, x, this->bitAND());
+  
+  return x;
 }
 
 AST::Base* Parser::bitXOR() {
+  auto x = this->bitOR();
 
+  while( this->eat("^") )
+    x = new AST::Expr(ASTKind::BitXOR, this->ate, x, this->bitOR());
+  
+  return x;
 }
 
 AST::Base* Parser::logAND() {
+  auto x = this->bitXOR();
 
+  while( this->eat("&&") )
+    x = new AST::Expr(ASTKind::LogAND, this->ate, x, this->bitXOR());
+  
+  return x;
 }
 
 AST::Base* Parser::logOR() {
+  auto x = this->logAND();
 
+  while( this->eat("||") )
+    x = new AST::Expr(ASTKind::LogOR, this->ate, x, this->logAND());
+  
+  return x;
 }
 
 AST::Base* Parser::assign() {
+  auto x = this->logOR();
+
+  if( this->eat("=") )
+    x = new AST::Expr(ASTKind::Assignment, this->ate, x, this->assign());
   
+  return x;
 }
 
 AST::Base* Parser::expr() {
