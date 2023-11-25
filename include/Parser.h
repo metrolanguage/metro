@@ -14,7 +14,6 @@ public:
 
   AST::Base* factor();
   AST::Base* indexref();
-  AST::Base* memberaccess();
   AST::Base* unary();
   AST::Base* mul();
   AST::Base* add();

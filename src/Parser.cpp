@@ -104,39 +104,28 @@ AST::Base* Parser::factor() {
 AST::Base* Parser::indexref() {
   auto x = this->factor();
 
-  while( this->eat("[") ) {
-    x = new AST::Expr(ASTKind::IndexRef, this->ate, x, this->expr());
-    this->expect("]");
-  }
-
-  return x;
-}
-
-AST::Base* Parser::memberaccess() {
-  auto x = this->indexref();
-
-  while( this->eat(".") ) {
-    auto tok = this->ate;
-
-    auto y = this->indexref();
-
-    if( y->kind == ASTKind::CallFunc ) {
-      auto cf = y->as<AST::CallFunc>();
-
-      cf->arguments.insert(cf->arguments.begin(), x);
-      x = cf;
+  while( this->check() ) {
+    if( this->eat("[") ) {
+      x = new AST::Expr(ASTKind::IndexRef, this->ate, x, this->expr());
+      this->expect("]");
     }
-    else {
-      x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
+    else if( this->eat(".") ) {
+      auto tok = this->ate;
 
-      while( y->kind == ASTKind::IndexRef )
-        y = y->as<AST::Expr>()->left;
-      
-      if( y->kind != ASTKind::Variable )
-        Error(y)
-          .setMessage("expected identifier")
-          .emit();
+      auto y = this->factor();
+
+      if( y->kind == ASTKind::CallFunc ) {
+        auto cf = y->as<AST::CallFunc>();
+
+        cf->arguments.insert(cf->arguments.begin(), x);
+        x = cf;
+      }
+      else {
+        x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
+      }
     }
+    else
+      break;
   }
 
   return x;
@@ -146,10 +135,10 @@ AST::Base* Parser::unary() {
 
   if( this->eat("-") ) {
     return new AST::Expr(ASTKind::Sub, this->ate,
-      new AST::Value(nullptr, new objects::Int(0)), this->memberaccess());
+      new AST::Value(nullptr, new objects::Int(0)), this->indexref());
   }
 
-  return this->memberaccess();
+  return this->indexref();
 }
 
 AST::Base* Parser::mul() {
@@ -219,13 +208,13 @@ AST::Base* Parser::compare() {
 }
 
 AST::Base* Parser::equality() {
-  auto x = this->logAND();
+  auto x = this->compare();
 
   while( this->check() ) {
     if( this->eat("==") )
-      x = new AST::Expr(ASTKind::Equal, this->ate, x, this->logAND());
+      x = new AST::Expr(ASTKind::Equal, this->ate, x, this->compare());
     else if( this->eat("!=") )
-      x = new AST::Expr(ASTKind::NotEqual, this->ate, x, this->logAND());
+      x = new AST::Expr(ASTKind::NotEqual, this->ate, x, this->compare());
     else
       break;
   }

@@ -83,12 +83,12 @@ Token* Lexer::lex() {
 
     // char
     else if( c == '\'' ) {
-      cur = new Token(TokenKind::Char, cur, this->eat_literal(c), pos);
+      cur = new Token(TokenKind::Char, cur, this->eat_literal(c), pos + 1);
     }
 
     // string
     else if( c == '"' ) {
-      cur = new Token(TokenKind::String, cur, this->eat_literal(c), pos);
+      cur = new Token(TokenKind::String, cur, this->eat_literal(c), pos + 1);
     }
 
     // find punctuater
@@ -150,12 +150,12 @@ size_t Lexer::pass_while(std::function<bool(char)> cond) {
 }
 
 std::string_view Lexer::eat_literal(char quat) {
-  auto pos = this->position++;
+  auto pos = ++this->position;
 
   while( this->peek() != quat )
     this->position++;
 
-  return { this->source.data() + pos, (++this->position) - pos };
+  return { this->source.data() + pos, (this->position++) - pos };
 }
 
 } // namespace metro

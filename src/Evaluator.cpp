@@ -66,15 +66,22 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       auto obj = this->eval(x->left);
 
-      auto member = x->right;
-      AST::Base* indexes = nullptr;
+      auto member = x->right->as<AST::Variable>();
+      auto name = member->getName();
 
-      while( member->kind == ASTKind::IndexRef )
-        member = member->as<AST::Expr>()->left;
+      switch( obj->type.kind ) {
+        case Type::String: {
+          if( name == "count" ) {
+            return new USize(obj->as<String>()->value.length());
+          }
+
+          break;
+        }
+      }
 
       Error(member)
         .setMessage("object of type '" + obj->type.to_string()
-          + "' don't have a member '" +  + "'")
+          + "' don't have a member '" + name + "'")
         .emit()
         .exit();
     }
@@ -121,6 +128,9 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       break;
     }
+
+    default:
+      todo_impl;
   }
 
   return lhs;

@@ -104,7 +104,8 @@ struct WithName : Base {
 
 protected:
   WithName(ASTKind k, Token* t = nullptr)
-    : Base(k, t)
+    : Base(k, t),
+      name(t ? t->str : "")
   {
   }
 };
