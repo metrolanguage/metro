@@ -61,17 +61,21 @@ AST::Base* Parser::factor() {
   }
 
   switch( tok->kind ) {
-    case TokenKind::Int: {
+    case TokenKind::Int:
       this->next();
-      return new AST::Value(tok,
-        new objects::Int(std::stoi(std::string(tok->str))));
-    }
+      return new AST::Value(tok, new objects::Int(std::stoi(std::string(tok->str))));
 
-    case TokenKind::String: {
+    case TokenKind::Float:
       this->next();
-      return new AST::Value(tok,
-        new objects::String(std::string(tok->str)));
-    }
+      return new AST::Value(tok, new objects::Float(std::stof(std::string(tok->str))));
+
+    case TokenKind::USize:
+      this->next();
+      return new AST::Value(tok, new objects::USize(std::stoull(std::string(tok->str))));
+
+    case TokenKind::String:
+      this->next();
+      return new AST::Value(tok, new objects::String(std::string(tok->str)));
 
     case TokenKind::Identifier: {
 

@@ -73,17 +73,17 @@ Token* Lexer::lex() {
     // digits
     else if( isdigit(c) ) {
       cur = new Token(TokenKind::Int, cur, { str, this->pass_while(isdigit) }, pos);
+
+      if( this->peek() == 'u' ) {
+        cur->kind = TokenKind::USize;
+        this->position++;
+      }
     }
 
     // identifier
     else if( isalpha(c) || c == '_' ) {
       cur = new Token(TokenKind::Identifier, cur, { str,
         this->pass_while([] (char x) { return isalnum(x) || x == '_'; }) }, pos);
-
-      if( this->peek() == 'u' ) {
-        cur->kind = TokenKind::USize;
-        this->position++;
-      }
     }
 
     // char

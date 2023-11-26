@@ -269,7 +269,7 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   auto lhs = this->eval(expr->left);
   auto rhs = this->eval(expr->right);
 
-  if( static_cast<int>(expr->kind) >= std::size(operator_labels) )
+  if( static_cast<size_t>(expr->kind) >= std::size(operator_labels) )
     todo_impl;
 
   goto *operator_labels[static_cast<int>(expr->kind)];
@@ -856,17 +856,17 @@ op_bigger:
       switch( rhs->type.kind ) {
         // usize > int
         case Type::Int:
-          lhs = new Bool(lhs->as<USize>()->value > rhs->as<Int>()->value);
+          lhs = new Bool(lhs->as<USize>()->value > (unsigned)rhs->as<Int>()->value);
           break;
 
         // usize > float
         case Type::Float:
-          lhs = new Bool(lhs->as<USize>()->value > (Int::ValueType)rhs->as<Float>()->value);
+          lhs = new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<Float>()->value);
           break;
 
         // usize > usize
         case Type::USize:
-          lhs = new Bool(lhs->as<USize>()->value > (Int::ValueType)rhs->as<USize>()->value);
+          lhs = new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<USize>()->value);
           break;
 
         default:
@@ -929,17 +929,17 @@ op_bigger_or_equal:
       switch( rhs->type.kind ) {
         // usize >= int
         case Type::Int:
-          lhs = new Bool(lhs->as<USize>()->value >= rhs->as<Int>()->value);
+          lhs = new Bool(lhs->as<USize>()->value >= (unsigned)rhs->as<Int>()->value);
           break;
 
         // usize >= float
         case Type::Float:
-          lhs = new Bool(lhs->as<USize>()->value >= (Int::ValueType)rhs->as<Float>()->value);
+          lhs = new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<Float>()->value);
           break;
 
         // usize >= usize
         case Type::USize:
-          lhs = new Bool(lhs->as<USize>()->value >= (Int::ValueType)rhs->as<USize>()->value);
+          lhs = new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<USize>()->value);
           break;
 
         default:
@@ -970,7 +970,7 @@ op_equal:
         // int == usize
         case Type::USize:
           in_op_equal_int_usize:
-          lhs = new Bool(lhs->as<Int>()->value == rhs->as<USize>()->value);
+          lhs = new Bool((unsigned)lhs->as<Int>()->value == rhs->as<USize>()->value);
           break;
 
         default:
