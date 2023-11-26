@@ -366,6 +366,7 @@ op_mul:
         case Type::USize:
         in_op_mul_int_usize:
           lhs->as<Int>()->value *= (Int::ValueType)rhs->as<USize>()->value;
+          break;
 
         // int * string
         case Type::String:
@@ -488,21 +489,199 @@ op_mul:
 
 op_div:
   switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int / int
+        case Type::Int:
+          if( rhs->as<Int>()->value == 0 )
+            Error(expr->token)
+              .setMessage("divided by zero")
+              .emit()
+              .exit();
+
+          lhs->as<Int>()->value /= rhs->as<Int>()->value;
+          break;
+
+        // int / float
+        case Type::Float:
+        in_op_div_int_float:
+          if( rhs->as<Float>()->value == 0 )
+            Error(expr->token)
+              .setMessage("divided by zero")
+              .emit()
+              .exit();
+
+          lhs->as<Int>()->value /= (Int::ValueType)rhs->as<Float>()->value;
+          break;
+
+        // int / usize
+        case Type::USize:
+        in_op_div_int_usize:
+          if( rhs->as<USize>()->value == 0 )
+            Error(expr->token)
+              .setMessage("divided by zero")
+              .emit()
+              .exit();
+
+          lhs->as<Int>()->value /= (Int::ValueType)rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::Float:
+      switch( rhs->type.kind ) {
+        // float / int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_div_int_float;
+        
+        // float / float
+        case Type::Float:
+          if( rhs->as<Float>()->value == 0 )
+            Error(expr->token)
+              .setMessage("divided by zero")
+              .emit()
+              .exit();
+
+          lhs->as<Float>()->value /= rhs->as<Float>()->value;
+          break;
+
+        // float / usize
+        case Type::USize:
+        in_op_div_float_usize:
+          if( rhs->as<USize>()->value == 0 )
+            Error(expr->token)
+              .setMessage("divided by zero")
+              .emit()
+              .exit();
+
+          lhs->as<Float>()->value /= (Float::ValueType)rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize / int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_div_int_usize;
+
+        // usize / float
+        case Type::Float:
+          std::swap(lhs, rhs);
+          goto in_op_div_float_usize;
+        
+        // usize / usize
+        case Type::USize:
+          if( rhs->as<USize>()->value == 0 )
+            Error(expr->token)
+              .setMessage("divided by zero")
+              .emit()
+              .exit();
+
+          lhs->as<USize>()->value /= rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    default:
+      goto invalidOperator;
   }
   goto end_label;
 
 op_mod:
   switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int % int
+        case Type::Int:
+          lhs->as<Int>()->value %= rhs->as<Int>()->value;
+          break;
+        
+        // int % float
+        case Type::Float:
+        in_op_mod_int_float:
+          lhs->as<Int>()->value %= (Int::ValueType)rhs->as<Float>()->value;
+          break;
+
+        // int % usize
+        case Type::USize:
+        in_op_mod_int_usize:
+          lhs->as<Int>()->value %= (Int::ValueType)rhs->as<USize>()->value;
+          break;
+      }
+      break;
+
+    case Type::Float:
+      switch( rhs->type.kind ) {
+        // float % int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_mod_int_float;
+
+        // float % float
+        // => int
+        case Type::Float:
+          lhs = new Int(
+            (Int::ValueType)lhs->as<Float>()->value % (Int::ValueType)rhs->as<Float>()->value);
+          break;
+
+        // float % usize
+        case Type::USize:
+          std::swap(lhs, rhs);
+          goto in_op_mod_usize_float;
+
+        default:
+          goto invalidOperator;
+      }
+
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize % int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_mod_int_usize;
+
+        // usize % float
+        case Type::Float:
+        in_op_mod_usize_float:
+          lhs->as<USize>()->value %= (USize::ValueType)rhs->as<Float>()->value;
+          break;
+        
+        // usize % usize
+        case Type::USize:
+          lhs->as<USize>()->value %= rhs->as<USize>()->value;
+          break;
+      }
+
+    default:
+      goto invalidOperator;
   }
   goto end_label;
 
 op_lshift:
   switch( lhs->type.kind ) {
+
+    default:
+      goto invalidOperator;
   }
   goto end_label;
 
 op_rshift:
   switch( lhs->type.kind ) {
+
+    default:
+      goto invalidOperator;
   }
   goto end_label;
 
