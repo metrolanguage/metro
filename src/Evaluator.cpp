@@ -115,6 +115,33 @@ Object* Evaluator::eval(AST::Base* ast) {
       return obj;
     }
 
+    case ASTKind::LogAND:
+    case ASTKind::LogOR: {
+      auto x = ast->as<AST::Expr>();
+
+      auto lhs = this->eval(x->left);
+      auto rhs = this->eval(x->right);
+
+      if( !lhs->type.equals(Type::Bool) ) {
+        Error(x->left)
+          .setMessage("expected boolean expression")
+          .emit()
+          .exit();
+      }
+
+      if( !rhs->type.equals(Type::Bool) ) {
+        Error(x->right)
+          .setMessage("expected boolean expression")
+          .emit()
+          .exit();
+      }
+
+      if( ast->kind == ASTKind::LogAND )
+        return new Bool(lhs->as<Bool>()->value && rhs->as<Bool>()->value);
+
+      return new Bool(lhs->as<Bool>()->value || rhs->as<Bool>()->value);
+    }
+
     case ASTKind::Range: {
       auto x = ast->as<AST::Expr>();
 
@@ -237,9 +264,6 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
     &&op_bit_and,
     &&op_bit_xor,
     &&op_bit_or,
-
-    &&op_log_and,
-    &&op_log_or,
   };
 
   auto lhs = this->eval(expr->left);
@@ -1007,7 +1031,38 @@ op_equal:
 op_bit_and:
   switch( lhs->type.kind ) {
     case Type::Int:
-      
+      switch( rhs->type.kind ) {
+        // int & int
+        case Type::Int:
+          lhs->as<Int>()->value &= rhs->as<Int>()->value;
+          break;
+        
+        // int & usize
+        case Type::USize:
+          lhs->as<Int>()->value &= rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize & int
+        case Type::Int:
+          lhs->as<USize>()->value &= rhs->as<Int>()->value;
+          break;
+        
+        // usize & usize
+        case Type::USize:
+          lhs->as<USize>()->value &= rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
 
     default:
       goto invalidOperator;
@@ -1016,6 +1071,39 @@ op_bit_and:
 
 op_bit_xor:
   switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int ^ int
+        case Type::Int:
+          lhs->as<Int>()->value ^= rhs->as<Int>()->value;
+          break;
+        
+        // int ^ usize
+        case Type::USize:
+          lhs->as<Int>()->value ^= rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize ^ int
+        case Type::Int:
+          lhs->as<USize>()->value ^= rhs->as<Int>()->value;
+          break;
+        
+        // usize ^ usize
+        case Type::USize:
+          lhs->as<USize>()->value ^= rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
 
     default:
       goto invalidOperator;
@@ -1024,22 +1112,39 @@ op_bit_xor:
 
 op_bit_or:
   switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int | int
+        case Type::Int:
+          lhs->as<Int>()->value |= rhs->as<Int>()->value;
+          break;
+        
+        // int | usize
+        case Type::USize:
+          lhs->as<Int>()->value |= rhs->as<USize>()->value;
+          break;
 
-    default:
-      goto invalidOperator;
-  }
-  goto end_label;
+        default:
+          goto invalidOperator;
+      }
+      break;
 
-op_log_and:
-  switch( lhs->type.kind ) {
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize | int
+        case Type::Int:
+          lhs->as<USize>()->value |= rhs->as<Int>()->value;
+          break;
+        
+        // usize | usize
+        case Type::USize:
+          lhs->as<USize>()->value |= rhs->as<USize>()->value;
+          break;
 
-    default:
-      goto invalidOperator;
-  }
-  goto end_label;
-
-op_log_or:
-  switch( lhs->type.kind ) {
+        default:
+          goto invalidOperator;
+      }
+      break;
 
     default:
       goto invalidOperator;
