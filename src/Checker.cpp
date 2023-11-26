@@ -61,6 +61,16 @@ void Checker::check(AST::Base* ast) {
 
       break;
     }
+
+    case ASTKind::For: {
+      auto x = ast->as<AST::For>();
+
+      this->check(x->iter);
+      this->check(x->content);
+      this->check(x->code);
+
+      break;
+    }
   
     default: {
       auto x = ast->as<AST::Expr>();

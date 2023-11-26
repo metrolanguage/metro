@@ -12,6 +12,7 @@ static char const* names[] {
   "string",
   "vector",
   "dict",
+  "range"
 };
 
 bool Type::equals(Type const& type) const {

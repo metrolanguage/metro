@@ -188,18 +188,28 @@ AST::Base* Parser::shift() {
   return x;
 }
 
-AST::Base* Parser::compare() {
+AST::Base* Parser::range() {
   auto x = this->shift();
+
+  if( this->eat("..") ) {
+    return new AST::Expr(ASTKind::Range, this->ate, x, this->shift());
+  }
+
+  return x;
+}
+
+AST::Base* Parser::compare() {
+  auto x = this->range();
 
   while( this->check() ) {
     if( this->eat(">") )
-      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->shift());
+      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->range());
     else if( this->eat("<") )
-      x = new AST::Expr(ASTKind::Bigger, this->ate, this->shift(), x);
+      x = new AST::Expr(ASTKind::Bigger, this->ate, this->range(), x);
     else if( this->eat(">=") )
-      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->shift());
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->range());
     else if( this->eat("<=") )
-      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->shift(), x);
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->range(), x);
     else
       break;
   }
@@ -299,6 +309,9 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
+  /*
+   * while
+   */
   if( this->eat("while") ) {
     auto ast = new AST::While(this->ate);
 
@@ -309,30 +322,20 @@ AST::Base* Parser::stmt() {
   }
 
   /*
-   * make for-loop:
-   * create a new scope and use while-statement.
-   *
-   * 
+   * for
    */
   if( this->eat("for") ) {
-    auto scope = new AST::Scope(this->ate);
+    auto ast = new AST::For(this->ate);
 
-    // make loop counter
-    auto counterName = "@count" + std::to_string(this->loopCounterDepth);
+    ast->iter = this->expr();
 
-    auto& assign = scope->list.emplace_back(
-        new AST::Expr(ASTKind::Assignment, nullptr,
-            new AST::Variable(ASTKind::Variable, counterName),
-            new AST::Value(nullptr, new objects::Int(0))));
+    this->expect("in");
 
-    auto ast = new AST::While(this->ate);
+    ast->content = this->expr();
 
-    auto iter = this->expr();
+    ast->code = this->stmt();
 
-    // todo
-
-    alert;
-    exit(99);
+    return ast;
   }
 
   auto x = this->expr();

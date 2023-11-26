@@ -72,6 +72,7 @@
     "span": "cpp",
     "stdfloat": "cpp",
     "cinttypes": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "*.inc": "cpp"
   }
 }

@@ -32,6 +32,8 @@ enum class ASTKind {
   LShift,
   RShift,
 
+  Range,
+
   Bigger,         // a >  b
   BiggerOrEqual,  // a >= b
 
@@ -61,7 +63,10 @@ enum class ASTKind {
   Switch,
 
   // loop-statements
-  While, /* also: used for other kind. */
+  Loop,
+  While,
+  DoWhile,
+  For,
 
   // global scope
   Function,
@@ -280,6 +285,27 @@ struct While : Base {
   ~While()
   {
     delete this->cond;
+    delete this->code;
+  }
+};
+
+struct For : Base {
+  Base* iter;
+  Base* content;
+  Base* code;
+
+  For(Token* token)
+    : Base(ASTKind::For, token),
+      iter(nullptr),
+      content(nullptr),
+      code(nullptr)
+  {
+  }
+
+  ~For()
+  {
+    delete this->iter;
+    delete this->content;
     delete this->code;
   }
 };

@@ -18,6 +18,7 @@ public:
   AST::Base* mul();
   AST::Base* add();
   AST::Base* shift();
+  AST::Base* range();
   AST::Base* compare();
   AST::Base* equality();
   AST::Base* bitAND();

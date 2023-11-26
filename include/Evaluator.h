@@ -26,11 +26,30 @@ public:
 
   Evaluator() { }
 
+  /*
+   * The core function.
+   */
   Object* eval(AST::Base* ast);
+
+
+  /*
+   * evaluate a node as lvalue.
+   * if can't be evaluated as lvalue, show error.
+   */
   Object*& evalAsLeft(AST::Base* ast);
 
 
+  /*
+   * evaluate operator in expression
+   */
+  Object* evalOperator(AST::Expr* expr);
+
 private:
+
+  Object*& evalIndexRef(AST::Expr* ast, Object* obj, Object* index);
+
+  CallStack& push_stack(AST::Function const* func);
+  void pop_stack();
 
   bool in_func() const {
     return !this->callStacks.empty();
@@ -46,11 +65,6 @@ private:
 
     return this->globalStorage;
   }
-
-  CallStack& push_stack(AST::Function const* func);
-  void pop_stack();
-
-  Object* evalIndexRef(AST::Expr* ast);
 
   Storage  globalStorage;
   std::vector<CallStack> callStacks;

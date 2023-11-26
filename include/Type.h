@@ -16,6 +16,7 @@ struct Type {
     String,
     Vector,
     Dict,
+    Range,
   };
 
   Kind kind;

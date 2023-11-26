@@ -11,11 +11,14 @@ namespace metro {
 
 using namespace objects;
 
+//
+// === eval ===
+//
 Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
-      return None::getNone();
+      break;
 
     case ASTKind::Value: {
       return ast->as<AST::Value>()->object;
@@ -23,7 +26,8 @@ Object* Evaluator::eval(AST::Base* ast) {
 
     case ASTKind::Variable: {
       return
-        this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+        this->getCurrentStorage()[ast->as<AST::Variable>()->getName()]
+            ->clone();
     }
 
     case ASTKind::Array: {
@@ -58,8 +62,11 @@ Object* Evaluator::eval(AST::Base* ast) {
       return cf->builtin->call(std::move(args));
     }
 
-    case ASTKind::IndexRef:
-      return this->evalIndexRef(ast->as<AST::Expr>());
+    case ASTKind::IndexRef: {
+      auto x = ast->as<AST::Expr>();
+
+      return this->evalIndexRef(x, this->eval(x->left), this->eval(x->right));
+    }
 
     case ASTKind::MemberAccess: {
       auto x = ast->as<AST::Expr>();
@@ -79,7 +86,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
         case Type::String: {
           if( name == "count" )
-            return new USize(obj->as<String>()->value.length());
+            return new USize(obj->as<String>()->value.size());
 
           break;
         }
@@ -90,6 +97,27 @@ Object* Evaluator::eval(AST::Base* ast) {
           + "' don't have a member '" + name + "'")
         .emit()
         .exit();
+    }
+
+    case ASTKind::Range: {
+      auto x = ast->as<AST::Expr>();
+
+      auto begin = this->eval(x->left);
+      auto end = this->eval(x->right);
+
+      if( !begin->type.equals(Type::Int) )
+        Error(x->left)
+          .setMessage("expected 'int' object")
+          .emit()
+          .exit();
+
+      if( !end->type.equals(Type::Int) )
+        Error(x->right)
+          .setMessage("expected 'int' object")
+          .emit()
+          .exit();
+
+      return new Range(begin->as<Int>()->value, end->as<Int>()->value);
     }
 
     case ASTKind::Assignment: {
@@ -118,19 +146,133 @@ Object* Evaluator::eval(AST::Base* ast) {
       for( auto&& x : scope->list )
         this->eval(x);
 
-      return None::getNone();
+      break;
     }
+
+    case ASTKind::For: {
+      auto x = ast->as<AST::For>();
+
+      auto& iter = this->evalAsLeft(x->iter);
+
+      todo_impl;
+
+      break;
+    }
+
+    default:
+      return this->evalOperator(ast->as<AST::Expr>());
   }
 
-  auto expr = ast->as<AST::Expr>();
+  return None::getNone();
+}
 
-  auto lhs = this->eval(expr->left)->clone();
+//
+// === evalAsLeft ===
+//
+Object*& Evaluator::evalAsLeft(AST::Base* ast) {
+  switch( ast->kind ) {
+    case ASTKind::Variable: {
+      return this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+    }
+
+    case ASTKind::IndexRef: {
+      auto x = ast->as<AST::Expr>();
+
+      return this->evalIndexRef(x, this->evalAsLeft(x->left), this->eval(x->right));
+    }
+
+    case ASTKind::MemberAccess:
+      return this->evalAsLeft(ast->as<AST::Expr>()->left);
+  }
+
+  Error(ast)
+    .setMessage("expected writable expression")
+    .emit()
+    .exit();
+}
+
+//
+// === evalOperator ===
+//
+Object* Evaluator::evalOperator(AST::Expr* expr) {
+  static void* operator_labels[] = {
+    nullptr, // value
+    nullptr, // array
+    nullptr, // variable
+    nullptr, // callfunc
+    nullptr, // memberaccess
+    nullptr, // indexref
+
+    &&op_add,
+    &&op_sub,
+    &&op_mul,
+    &&op_div,
+    &&op_mod,
+    &&op_lshift,
+    &&op_rshift,
+  };
+
+  auto lhs = this->eval(expr->left);
   auto rhs = this->eval(expr->right);
 
-  switch( expr->kind ) {
-    case ASTKind::Add: {
+  if( static_cast<int>(expr->kind) >= std::size(operator_labels) )
+    todo_impl;
 
-      lhs->as<Int>()->value += rhs->as<Int>()->value;
+  goto *operator_labels[static_cast<int>(expr->kind)];
+
+  invalidOperator:
+    Error(expr->token)
+      .setMessage("invalid operator")
+      .emit()
+      .exit();
+
+op_add:
+  switch( lhs->type.kind ) {
+    //
+    // left is Int
+    //
+    case Type::Int: {
+      switch( rhs->type.kind ) {
+        case Type::Int:
+          lhs->as<Int>()->value += rhs->as<Int>()->value;
+          break;
+
+        case Type::Float:
+        in_op_add_int_float:
+          lhs->as<Int>()->value += (Int::ValueType)rhs->as<Float>()->value;
+          break;
+
+        case Type::USize:
+          lhs->as<Int>()->value += (Int::ValueType)rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+
+      break;
+    }
+
+    //
+    // left is float
+    //
+    case Type::Float: {
+      switch( rhs->type.kind ) {
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_add_int_float;
+        
+        case Type::Float:
+          lhs->as<Float>()->value += rhs->as<Float>()->value;
+          break;
+        
+        case Type::USize:
+          lhs->as<Float>()->value += (Float::ValueType)rhs->as<Float>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
 
       break;
     }
@@ -139,40 +281,30 @@ Object* Evaluator::eval(AST::Base* ast) {
       todo_impl;
   }
 
+op_sub:
+  switch( lhs->type.kind ) {
+    case Type::Int:
+      
+  }
+
+op_mul:
+
+op_div:
+
+op_mod:
+
+op_lshift:
+
+op_rshift:
+
+
   return lhs;
 }
 
-Object*& Evaluator::evalAsLeft(AST::Base* ast) {
-  switch( ast->kind ) {
-    case ASTKind::Variable: {
-      return this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
-    }
-  }
-
-  alert;
-  std::exit(111);
-}
-
-Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
-  auto& stack = this->callStacks.emplace_back(func);
-
-  return stack;
-}
-
-void Evaluator::pop_stack() {
-  auto& stack = this->getCurrentCallStack();
-
-  for( auto&& [_, lvar] : stack.storage ) {
-    GC::unbind(lvar);
-  }
-
-  this->callStacks.pop_back();
-}
-
-Object* Evaluator::evalIndexRef(AST::Expr* ast) {
-
-  auto obj = this->eval(ast->left);
-  auto objIndex = this->eval(ast->right);
+//
+// === evalIndexRef ===
+//
+Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) {
 
   size_t index = 0;
 
@@ -194,7 +326,7 @@ Object* Evaluator::evalIndexRef(AST::Expr* ast) {
 
   switch( obj->type.kind ) {
     case Type::String: {
-      return new Char(obj->as<String>()->value[index]);
+      return (Object*&)obj->as<String>()->value[index];
     }
 
     case Type::Vector:
@@ -205,6 +337,22 @@ Object* Evaluator::evalIndexRef(AST::Expr* ast) {
     .setMessage("object of type '" + obj->type.to_string() + "' is not subscriptable")
     .emit()
     .exit();
+}
+
+Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
+  auto& stack = this->callStacks.emplace_back(func);
+
+  return stack;
+}
+
+void Evaluator::pop_stack() {
+  auto& stack = this->getCurrentCallStack();
+
+  for( auto&& [_, lvar] : stack.storage ) {
+    GC::unbind(lvar);
+  }
+
+  this->callStacks.pop_back();
 }
 
 
