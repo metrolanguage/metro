@@ -63,7 +63,7 @@ AST::Base* Parser::factor() {
   switch( tok->kind ) {
     case TokenKind::Int:
       this->next();
-      return new AST::Value(tok, new objects::Int(std::stoi(std::string(tok->str))));
+      return new AST::Value(tok, new objects::Int(std::stoll(std::string(tok->str))));
 
     case TokenKind::Float:
       this->next();
@@ -78,7 +78,6 @@ AST::Base* Parser::factor() {
       return new AST::Value(tok, new objects::String(std::string(tok->str)));
 
     case TokenKind::Identifier: {
-
       this->next();
 
       if( this->eat("(") ) {
