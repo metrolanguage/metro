@@ -277,27 +277,236 @@ op_add:
       break;
     }
 
+    case Type::String:
+
+
     default:
-      todo_impl;
+      goto invalidOperator;
   }
+  goto end_label;
 
 op_sub:
   switch( lhs->type.kind ) {
-    case Type::Int:
-      
+    //
+    // left is Int
+    //
+    case Type::Int: {
+      switch( rhs->type.kind ) {
+        // int - int
+        case Type::Int:
+          lhs->as<Int>()->value -= rhs->as<Int>()->value;
+          break;
+
+        // int - float
+        case Type::Float:
+        in_op_sub_int_float:
+          lhs->as<Int>()->value -= (Int::ValueType)rhs->as<Float>()->value;
+          break;
+
+        // int - usize
+        case Type::USize:
+          lhs->as<Int>()->value -= (Int::ValueType)rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+
+      break;
+    }
+
+    //
+    // left is float
+    //
+    case Type::Float: {
+      switch( rhs->type.kind ) {
+        // float - int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_sub_int_float;
+        
+        // float - float
+        case Type::Float:
+          lhs->as<Float>()->value -= rhs->as<Float>()->value;
+          break;
+        
+        // float - usize
+        case Type::USize:
+          lhs->as<Float>()->value -= (Float::ValueType)rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+
+      break;
+    }
+
+    default:
+      goto invalidOperator;
   }
+  goto end_label;
 
 op_mul:
+  switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int * int
+        case Type::Int:
+          lhs->as<Int>()->value *= rhs->as<Int>()->value;
+          break;
+
+        // int * float
+        case Type::Float:
+        in_op_mul_int_float:
+          lhs->as<Int>()->value *= (Int::ValueType)rhs->as<Float>()->value;
+          break;
+
+        // int * usize
+        case Type::USize:
+        in_op_mul_int_usize:
+          lhs->as<Int>()->value *= (Int::ValueType)rhs->as<USize>()->value;
+
+        // int * string
+        case Type::String:
+          lhs = new USize(lhs->as<Int>()->value);
+          goto in_op_mul_usize_string;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::Float:
+      switch( rhs->type.kind ) {
+        // float * int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_mul_int_float;
+
+        // float * float
+        case Type::Float:
+          lhs->as<Float>()->value *= rhs->as<Float>()->value;
+          break;
+        
+        // float * usize
+        case Type::USize:
+        in_op_mul_float_usize:
+          lhs->as<Float>()->value *= (Float::ValueType)rhs->as<USize>()->value;
+          break;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+    
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize * int
+        case Type::Int:
+          std::swap(lhs, rhs);
+          goto in_op_mul_int_usize;
+
+        // usize * float
+        case Type::Float:
+          std::swap(lhs, rhs);
+          goto in_op_mul_float_usize;
+
+        // usize * usize
+        case Type::USize:
+          lhs->as<USize>()->value *= rhs->as<USize>()->value;
+          break;
+
+        // usize * string
+        // => string
+        case Type::String: {
+        in_op_mul_usize_string:
+          auto obj = new String();
+
+          for( USize::ValueType i = 0; i < lhs->as<USize>()->value; i++ )
+            for( auto&& c : rhs->as<String>()->value )
+              obj->value.emplace_back(c->clone());
+
+          lhs = obj;
+          break;
+        }
+
+        // usize * vector
+        case Type::Vector: {
+        in_op_mul_usize_vector:
+          auto obj = new Vector();
+
+          for( USize::ValueType i = 0; i < lhs->as<USize>()->value; i++ )
+            for( auto&& e : rhs->as<Vector>()->elements )
+              obj->elements.emplace_back(e->clone());
+
+          lhs = obj;
+          break;
+        }
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::String:
+      switch( rhs->type.kind ) {
+        // string * int
+        case Type::Int:
+          rhs = new USize(rhs->as<Int>()->value);
+        
+        // string * usize
+        case Type::USize:
+          std::swap(lhs, rhs);
+          goto in_op_mul_usize_string;
+        
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    case Type::Vector:
+      switch( rhs->type.kind ) {
+        // vector * int
+        case Type::Int:
+          rhs = new USize(rhs->as<Int>()->value);
+
+        // vector * usize
+        case Type::USize:
+          std::swap(lhs, rhs);
+          goto in_op_mul_usize_vector;
+
+        default:
+          goto invalidOperator;
+      }
+      break;
+
+    default:
+      goto invalidOperator;
+  }
+  goto end_label;
 
 op_div:
+  switch( lhs->type.kind ) {
+  }
+  goto end_label;
 
 op_mod:
+  switch( lhs->type.kind ) {
+  }
+  goto end_label;
 
 op_lshift:
+  switch( lhs->type.kind ) {
+  }
+  goto end_label;
 
 op_rshift:
+  switch( lhs->type.kind ) {
+  }
+  goto end_label;
 
-
+end_label:
   return lhs;
 }
 
