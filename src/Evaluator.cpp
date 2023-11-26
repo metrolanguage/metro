@@ -70,10 +70,16 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto name = member->getName();
 
       switch( obj->type.kind ) {
+        case Type::Int: {
+          if( name == "abs" )
+            return new Int(std::abs(obj->as<Int>()->value));
+
+          break;
+        }
+
         case Type::String: {
-          if( name == "count" ) {
+          if( name == "count" )
             return new USize(obj->as<String>()->value.length());
-          }
 
           break;
         }
@@ -165,6 +171,40 @@ void Evaluator::pop_stack() {
 
 Object* Evaluator::evalIndexRef(AST::Expr* ast) {
 
+  auto obj = this->eval(ast->left);
+  auto objIndex = this->eval(ast->right);
+
+  size_t index = 0;
+
+  switch( objIndex->type.kind ) {
+    case Type::Int:
+      index = objIndex->as<Int>()->value;
+      break;
+
+    case Type::USize:
+      index = objIndex->as<USize>()->value;
+      break;
+    
+    default:
+      Error(ast->right)
+        .setMessage("expected 'usize' object")
+        .emit()
+        .exit();
+  }
+
+  switch( obj->type.kind ) {
+    case Type::String: {
+      return new Char(obj->as<String>()->value[index]);
+    }
+
+    case Type::Vector:
+      return obj->as<Vector>()->elements[index];
+  }
+
+  Error(ast->right)
+    .setMessage("object of type '" + obj->type.to_string() + "' is not subscriptable")
+    .emit()
+    .exit();
 }
 
 

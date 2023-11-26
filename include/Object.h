@@ -26,6 +26,17 @@ struct Object {
     return (T*)this;
   }
 
+  bool isNumeric() const {
+    switch( type.kind ) {
+      case Type::Int:
+      case Type::Float:
+      case Type::USize:
+        return true;
+    }
+
+    return false;
+  }
+
   virtual std::string to_string() const = 0;
   virtual Object* clone() const = 0;
 

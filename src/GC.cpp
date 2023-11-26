@@ -6,8 +6,6 @@
 
   ----------------------------*/
 
-/* todo: translate all comments to English */
-
 #include <map>
 #include <thread>
 #include <mutex>
@@ -16,8 +14,8 @@
 #include "GC.h"
 #include "alert.h"
 
-//  the maximum count of object in memory.
-//  注意：厳密には、この数に到達する手前になった段階で GC が作動します。
+//  The maximum count of object in memory.
+//  Collect all objects when overed this count.
 #define OBJECT_MEMORY_MAXIMUM   4096
 
 #define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
