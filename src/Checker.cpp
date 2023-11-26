@@ -19,6 +19,13 @@ void Checker::check(AST::Base* ast) {
     case ASTKind::Variable:
       break;
 
+    case ASTKind::Array: {
+      for( auto&& x : ast->as<AST::Array>()->elements )
+        this->check(x);
+
+      break;
+    }
+
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
 
@@ -50,6 +57,16 @@ void Checker::check(AST::Base* ast) {
       auto x = ast->as<AST::While>();
 
       this->check(x->cond);
+      this->check(x->code);
+
+      break;
+    }
+
+    case ASTKind::For: {
+      auto x = ast->as<AST::For>();
+
+      this->check(x->iter);
+      this->check(x->content);
       this->check(x->code);
 
       break;

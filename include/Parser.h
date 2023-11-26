@@ -14,13 +14,21 @@ public:
 
   AST::Base* factor();
   AST::Base* indexref();
+  AST::Base* unary();
   AST::Base* mul();
   AST::Base* add();
+  AST::Base* shift();
+  AST::Base* range();
+  AST::Base* compare();
+  AST::Base* equality();
+  AST::Base* bitAND();
+  AST::Base* bitOR();
+  AST::Base* bitXOR();
+  AST::Base* logAND();
+  AST::Base* logOR();
+  AST::Base* assign();
   AST::Base* expr();
-
   AST::Base* stmt();
-
-
 
 private:
 
@@ -32,6 +40,11 @@ private:
 
   Token* expectIdentifier();
   AST::Scope* expectScope();
+
+  AST::Variable* newVariable(std::string const& name);
+  AST::Expr* newAssign(AST::Base* dest, AST::Base* src);
+
+
 
   Token* token;
   Token* ate;

@@ -4,6 +4,7 @@
 #include <limits>
 #include <locale>
 #include "Type.h"
+#include "Utils.h"
 
 namespace metro::objects {
 
@@ -24,6 +25,17 @@ struct Object {
   template <class T>
   T* as() const {
     return (T*)this;
+  }
+
+  bool isNumeric() const {
+    switch( type.kind ) {
+      case Type::Int:
+      case Type::Float:
+      case Type::USize:
+        return true;
+    }
+
+    return false;
   }
 
   virtual std::string to_string() const = 0;
@@ -59,6 +71,8 @@ private:
 
 template <class T, Type::Kind k>
 struct _Primitive : Object {
+  using ValueType = T;
+  
   T value;
 
   std::string to_string() const {
@@ -78,27 +92,14 @@ struct _Primitive : Object {
 
 template <>
 struct _Primitive<std::u16string, Type::String> : Object {
-  std::u16string value;
+  std::vector<Char*> value;
 
-  std::string to_string() const {
-    return conv.to_bytes(this->value);
-  }
+  std::string to_string() const;
+  String* clone() const;
 
-  String* clone() const {
-    return new String(this->value);
-  }
-
-  _Primitive(std::u16string const& val = u"")
-    : Object(Type::String),
-      value(val)
-  {
-  }
-
-  _Primitive(std::string const& str)
-    : Object(Type::String),
-      value(conv.from_bytes(str))
-  {
-  }
+  _Primitive(std::u16string const& str = u"");
+  _Primitive(std::string const& str);
+  _Primitive(std::vector<Char*> val);
 
 private:
   static inline std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
@@ -200,6 +201,26 @@ struct Dict : Object {
   Dict(std::vector<std::pair<Object*, Object*>>&& elements = { })
     : Object(Type::Dict),
       elements(std::move(elements))
+  {
+  }
+};
+
+struct Range : Object {
+  int64_t begin;
+  int64_t end;
+
+  std::string to_string() const {
+    return utils::format("%llu .. %llu", this->begin, this->end);
+  }
+
+  Range* clone() const {
+    return new Range(this->begin, this->end);
+  }
+
+  Range(int64_t begin, int64_t end)
+    : Object(Type::Range),
+      begin(begin),
+      end(end)
   {
   }
 };

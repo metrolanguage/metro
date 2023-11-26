@@ -13,11 +13,16 @@ namespace builtin {
 enum class ASTKind {
   // factor
   Value,
+  Array,
   Variable,
   CallFunc,
   
   // member access
   MemberAccess,
+
+  IndexRef,
+
+  Not,
 
   // expr
   Add,
@@ -25,6 +30,16 @@ enum class ASTKind {
   Mul,
   Div,
   Mod,
+
+  LShift,
+  RShift,
+
+  Range,
+
+  Bigger,         // a >  b
+  BiggerOrEqual,  // a >= b
+
+  Equal,
 
   // bit calc
   BitAND,   // &
@@ -49,7 +64,10 @@ enum class ASTKind {
   Switch,
 
   // loop-statements
-  While, /* also: used for other kind. */
+  Loop,
+  While,
+  DoWhile,
+  For,
 
   // global scope
   Function,
@@ -92,7 +110,8 @@ struct WithName : Base {
 
 protected:
   WithName(ASTKind k, Token* t = nullptr)
-    : Base(k, t)
+    : Base(k, t),
+      name(t ? t->str : "")
   {
   }
 };
@@ -118,6 +137,21 @@ struct Variable : WithName {
   Variable(Token* token)
     : WithName(ASTKind::Variable, token)
   {
+  }
+};
+
+struct Array : Base {
+  std::vector<Base*> elements;
+
+  Array(Token* token)
+    : Base(ASTKind::Array, token)
+  {
+  }
+
+  ~Array()
+  {
+    for( auto&& e : this->elements )
+      delete e;
   }
 };
 
@@ -252,6 +286,27 @@ struct While : Base {
   ~While()
   {
     delete this->cond;
+    delete this->code;
+  }
+};
+
+struct For : Base {
+  Base* iter;
+  Base* content;
+  Base* code;
+
+  For(Token* token)
+    : Base(ASTKind::For, token),
+      iter(nullptr),
+      content(nullptr),
+      code(nullptr)
+  {
+  }
+
+  ~For()
+  {
+    delete this->iter;
+    delete this->content;
     delete this->code;
   }
 };

@@ -46,18 +46,36 @@ AST::Base* Parser::parse() {
 AST::Base* Parser::factor() {
   auto tok = this->token;
 
-  switch( tok->kind ) {
-    case TokenKind::Int: {
-      this->next();
-      return new AST::Value(tok,
-        new objects::Int(std::stoi(std::string(tok->str))));
+  if( this->eat("[") ) {
+    auto ast = new AST::Array(tok);
+
+    if( !this->eat("]") ) {
+      do {
+        ast->elements.emplace_back(this->expr());
+      } while( this->eat(",") );
+
+      this->expect("]");
     }
 
-    case TokenKind::String: {
+    return ast;
+  }
+
+  switch( tok->kind ) {
+    case TokenKind::Int:
       this->next();
-      return new AST::Value(tok,
-        new objects::String(std::string(tok->str)));
-    }
+      return new AST::Value(tok, new objects::Int(std::stoi(std::string(tok->str))));
+
+    case TokenKind::Float:
+      this->next();
+      return new AST::Value(tok, new objects::Float(std::stof(std::string(tok->str))));
+
+    case TokenKind::USize:
+      this->next();
+      return new AST::Value(tok, new objects::USize(std::stoull(std::string(tok->str))));
+
+    case TokenKind::String:
+      this->next();
+      return new AST::Value(tok, new objects::String(std::string(tok->str)));
 
     case TokenKind::Identifier: {
 
@@ -88,17 +106,28 @@ AST::Base* Parser::factor() {
 }
 
 AST::Base* Parser::indexref() {
-
-
-  todo_impl; 
-}
-
-AST::Base* Parser::add() {
   auto x = this->factor();
 
   while( this->check() ) {
-    if( this->eat("+") )
-      x = new AST::Expr(ASTKind::Add, this->ate, x, this->factor());
+    if( this->eat("[") ) {
+      x = new AST::Expr(ASTKind::IndexRef, this->ate, x, this->expr());
+      this->expect("]");
+    }
+    else if( this->eat(".") ) {
+      auto tok = this->ate;
+
+      auto y = this->factor();
+
+      if( y->kind == ASTKind::CallFunc ) {
+        auto cf = y->as<AST::CallFunc>();
+
+        cf->arguments.insert(cf->arguments.begin(), x);
+        x = cf;
+      }
+      else {
+        x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
+      }
+    }
     else
       break;
   }
@@ -106,8 +135,167 @@ AST::Base* Parser::add() {
   return x;
 }
 
+AST::Base* Parser::unary() {
+
+  if( this->eat("-") ) {
+    return new AST::Expr(ASTKind::Sub, this->ate,
+      new AST::Value(nullptr, new objects::Int(0)), this->indexref());
+  }
+
+  if( this->eat("!") )
+    return new AST::Expr(ASTKind::Not, this->ate, this->indexref(), nullptr);
+
+  return this->indexref();
+}
+
+AST::Base* Parser::mul() {
+  auto x = this->unary();
+
+  while( this->check() ) {
+    if( this->eat("*") )
+      x = new AST::Expr(ASTKind::Mul, this->ate, x, this->unary());
+    else if( this->eat("/") )
+      x = new AST::Expr(ASTKind::Div, this->ate, x, this->unary());
+    else if( this->eat("%") )
+      x = new AST::Expr(ASTKind::Mod, this->ate, x, this->unary());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::add() {
+  auto x = this->mul();
+
+  while( this->check() ) {
+    if( this->eat("+") )
+      x = new AST::Expr(ASTKind::Add, this->ate, x, this->mul());
+    else if( this->eat("-") )
+      x = new AST::Expr(ASTKind::Add, this->ate, x, this->mul());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::shift() {
+  auto x = this->add();
+
+  while( this->check() ) {
+    if( this->eat("<<") )
+      x = new AST::Expr(ASTKind::LShift, this->ate, x, this->add());
+    else if( this->eat(">>") )
+      x = new AST::Expr(ASTKind::RShift, this->ate, x, this->add());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::range() {
+  auto x = this->shift();
+
+  if( this->eat("..") ) {
+    return new AST::Expr(ASTKind::Range, this->ate, x, this->shift());
+  }
+
+  return x;
+}
+
+AST::Base* Parser::compare() {
+  auto x = this->range();
+
+  while( this->check() ) {
+    if( this->eat(">") )
+      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->range());
+    else if( this->eat("<") )
+      x = new AST::Expr(ASTKind::Bigger, this->ate, this->range(), x);
+    else if( this->eat(">=") )
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->range());
+    else if( this->eat("<=") )
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->range(), x);
+    else
+      break;
+  }
+  
+  return x;
+}
+
+AST::Base* Parser::equality() {
+  auto x = this->compare();
+
+  while( this->check() ) {
+    if( this->eat("==") )
+      x = new AST::Expr(ASTKind::Equal, this->ate, x, this->compare());
+    else if( this->eat("!=") )
+      x = new AST::Expr(ASTKind::Not, this->ate,
+      new AST::Expr(ASTKind::Equal, this->ate, x, this->compare()), nullptr);
+    else
+      break;
+  }
+  
+  return x;
+}
+
+AST::Base* Parser::bitAND() {
+  auto x = this->equality();
+
+  while( this->eat("&") )
+    x = new AST::Expr(ASTKind::BitAND, this->ate, x, this->equality());
+  
+  return x;
+}
+
+AST::Base* Parser::bitOR() {
+  auto x = this->bitAND();
+
+  while( this->eat("|") )
+    x = new AST::Expr(ASTKind::BitOR, this->ate, x, this->bitAND());
+  
+  return x;
+}
+
+AST::Base* Parser::bitXOR() {
+  auto x = this->bitOR();
+
+  while( this->eat("^") )
+    x = new AST::Expr(ASTKind::BitXOR, this->ate, x, this->bitOR());
+  
+  return x;
+}
+
+AST::Base* Parser::logAND() {
+  auto x = this->bitXOR();
+
+  while( this->eat("&&") )
+    x = new AST::Expr(ASTKind::LogAND, this->ate, x, this->bitXOR());
+  
+  return x;
+}
+
+AST::Base* Parser::logOR() {
+  auto x = this->logAND();
+
+  while( this->eat("||") )
+    x = new AST::Expr(ASTKind::LogOR, this->ate, x, this->logAND());
+  
+  return x;
+}
+
+AST::Base* Parser::assign() {
+  auto x = this->logOR();
+
+  if( this->eat("=") )
+    x = new AST::Expr(ASTKind::Assignment, this->ate, x, this->assign());
+  
+  return x;
+}
+
 AST::Base* Parser::expr() {
-  return this->add();
+  return this->assign();
 }
 
 AST::Base* Parser::stmt() {
@@ -129,6 +317,9 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
+  /*
+   * while
+   */
   if( this->eat("while") ) {
     auto ast = new AST::While(this->ate);
 
@@ -139,30 +330,20 @@ AST::Base* Parser::stmt() {
   }
 
   /*
-   * make for-loop:
-   * create a new scope and use while-statement.
-   *
-   * 
+   * for
    */
   if( this->eat("for") ) {
-    auto scope = new AST::Scope(this->ate);
+    auto ast = new AST::For(this->ate);
 
-    // make loop counter
-    auto counterName = "@count" + std::to_string(this->loopCounterDepth);
+    ast->iter = this->expr();
 
-    auto& assign = scope->list.emplace_back(
-        new AST::Expr(ASTKind::Assignment, nullptr,
-            new AST::Variable(ASTKind::Variable, counterName),
-            new AST::Value(nullptr, new objects::Int(0))));
+    this->expect("in");
 
-    auto ast = new AST::While(this->ate);
+    ast->content = this->expr();
 
-    auto iter = this->expr();
+    ast->code = this->stmt();
 
-    // todo
-
-    alert;
-    exit(99);
+    return ast;
   }
 
   auto x = this->expr();
