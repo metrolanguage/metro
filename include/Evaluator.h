@@ -33,14 +33,20 @@ public:
 
 
   /*
-   * evaluate a node as lvalue.
+   * Evaluate statements
+   */
+  void evalStatements(AST::Base* ast);
+
+
+  /*
+   * Evaluate a node as lvalue.
    * if can't be evaluated as lvalue, show error.
    */
   Object*& evalAsLeft(AST::Base* ast);
 
 
   /*
-   * evaluate operator in expression
+   * Evaluate operator in expression
    */
   Object* evalOperator(AST::Expr* expr);
 
@@ -51,7 +57,7 @@ private:
   CallStack& push_stack(AST::Function const* func);
   void pop_stack();
 
-  bool in_func() const {
+  bool inFunction() const {
     return !this->callStacks.empty();
   }
 
@@ -60,7 +66,7 @@ private:
   }
 
   Storage& getCurrentStorage() {
-    if( this->in_func() )
+    if( this->inFunction() )
       return this->getCurrentCallStack().storage;
 
     return this->globalStorage;

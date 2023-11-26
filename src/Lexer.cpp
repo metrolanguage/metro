@@ -10,6 +10,8 @@ static char const* punctuaters[] {
   ">>",
   "<=",
   ">=",
+  "==",
+  "!=",
   "<",
   ">",
   "+",
@@ -77,6 +79,14 @@ Token* Lexer::lex() {
       if( this->peek() == 'u' ) {
         cur->kind = TokenKind::USize;
         this->position++;
+      }
+      else if( this->peek() == '.' ) {
+        this->position++;
+
+        this->pass_while(isdigit);
+
+        cur->kind = TokenKind::Float;
+        cur->str = { str, this->position - pos };
       }
     }
 

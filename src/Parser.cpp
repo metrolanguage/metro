@@ -363,6 +363,13 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
+  /*
+   * return
+   */
+  if( this->eat("return") ) {
+
+  }
+
   auto x = this->expr();
   this->expect(";");
   return x;

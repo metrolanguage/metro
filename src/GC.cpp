@@ -16,7 +16,7 @@
 
 //  The maximum count of object in memory.
 //  Collect all objects when overed this count.
-#define OBJECT_MEMORY_MAXIMUM   4096
+#define OBJECT_MEMORY_MAXIMUM   (1 << 13)
 
 #define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
 
@@ -109,7 +109,7 @@ void _CollectThreadFunc() {
   _MarkAll();
 
   for( auto&& pObj : _Memory )
-    if( pObj && !pObj->isMarked ) {
+    if( pObj && !pObj->noDelete && !pObj->isMarked ) {
       delete pObj;
       pObj = nullptr;
     }

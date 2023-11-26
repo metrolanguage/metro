@@ -28,6 +28,11 @@ Metro::~Metro()
 }
 
 int Metro::main() {
+  
+  auto nnn = new int[10];
+  nnn[0]++;
+
+  GC::enable();
 
   SourceLoc source{ "test.metro" };
 
@@ -50,8 +55,6 @@ int Metro::main() {
   Error::check();
 
   Evaluator eval;
-
-  GC::enable();
 
   eval.eval(ast);
 

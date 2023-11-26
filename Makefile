@@ -1,4 +1,4 @@
-TARGET		:= 	metro
+TARGET		?= 	metro
 
 TOPDIR		?= 	$(CURDIR)
 BUILD			:= 	build
@@ -8,7 +8,7 @@ SOURCE		:= 	src
 CC			:= clang
 CXX			:= clang++
 
-OPTI			?= -O0 -g
+OPTI			?= -O0 -g -D_METRO_DEBUG_
 COMMONFLAGS		:= $(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)
 CFLAGS			:= $(COMMONFLAGS) -std=c17
 CXXFLAGS		:= $(COMMONFLAGS) -std=c++20
@@ -38,14 +38,14 @@ all: $(BUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(TOPDIR)/Makefile
 
 release: $(BUILD)
-	@$(MAKE) --no-print-directory OPTI="-O3" \
+	@$(MAKE) --no-print-directory TARGET="metrod" OPTI="-O3" \
 		LDFLAGS="-Wl,--gc-sections,-s" -C $(BUILD) -f $(TOPDIR)/Makefile
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 
 clean:
-	rm -rf $(TARGET) $(BUILD)
+	rm -rf $(TARGET) $(TARGET)d $(BUILD)
 
 re: clean all
 

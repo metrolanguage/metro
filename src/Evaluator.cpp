@@ -7,6 +7,9 @@
 #include "Utils.h"
 #include "Error.h"
 
+#define LABEL_TABLE   \
+  static void* _labels[]
+
 namespace metro {
 
 using namespace objects;
@@ -18,6 +21,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
+    case ASTKind::Namespace:
       break;
 
     case ASTKind::Value: {
@@ -66,7 +70,7 @@ Object* Evaluator::eval(AST::Base* ast) {
         auto& stack = this->push_stack(cf->userdef);
 
         for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
-          stack.storage[arg->str] = *it++;
+          GC::unbind(stack.storage[arg->str] = *it++);
         }
 
         this->eval(cf->userdef->scope);
@@ -202,75 +206,18 @@ Object* Evaluator::eval(AST::Base* ast) {
       return this->evalAsLeft(assign->left) = value;
     }
 
-    case ASTKind::Scope: {
-      auto scope = ast->as<AST::Scope>();
-
-      for( auto&& x : scope->list )
-        this->eval(x);
-
+    case ASTKind::Scope:
+    case ASTKind::If:
+    case ASTKind::Switch:
+    case ASTKind::Return:
+    case ASTKind::Break:
+    case ASTKind::Continue:
+    case ASTKind::Loop:
+    case ASTKind::While:
+    case ASTKind::DoWhile:
+    case ASTKind::For:
+      this->evalStatements(ast);
       break;
-    }
-
-    case ASTKind::For: {
-      auto x = ast->as<AST::For>();
-
-      // if already defined variable with same name of iterator, save object of that.
-      Object* save_iter_value = nullptr;
-      Object** saved_var_ptr = nullptr;
-
-      auto& iter = this->evalAsLeft(x->iter);
-      auto content = this->eval(x->content);
-
-      if( iter ) {
-        save_iter_value = iter;
-        saved_var_ptr = &iter;
-      }
-
-      if( !content->type.isIterable() ) {
-        Error(x->content)
-          .setMessage("object of type '" + content->type.toString() + "' is not iterable")
-          .emit()
-          .exit();
-      }
-
-      switch( content->type.kind ) {
-        case Type::String: {
-          auto _Str = content->as<String>();
-
-          for( auto&& _Char : _Str->value ) {
-            iter = _Char;
-            this->eval(x->code);
-          }
-
-          break;
-        }
-
-        case Type::Vector: {
-          auto _Vec = content->as<Vector>();
-
-          for( auto&& _Elem : _Vec->elements ) {
-            iter = _Elem;
-            this->eval(x->code);
-          }
-
-          break;
-        }
-
-        case Type::Dict: {
-          todo_impl;
-        }
-
-        case Type::Range: {
-          todo_impl;
-        }
-      }
-
-      // restore if saved
-      if( saved_var_ptr )
-        *saved_var_ptr = save_iter_value;
-
-      break;
-    }
 
     default:
       return this->evalOperator(ast->as<AST::Expr>());
@@ -278,6 +225,130 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   return None::getNone();
 }
+
+void Evaluator::evalStatements(AST::Base* ast) {
+  LABEL_TABLE {
+    &&_eval_scope,
+    &&_eval_if,
+    &&_eval_switch,
+    &&_eval_return,
+    &&_eval_break,
+    &&_eval_continue,
+    &&_eval_loop,
+    &&_eval_while,
+    &&_eval_do_while,
+    &&_eval_for,
+  };
+
+  goto *_labels[static_cast<int>(ast->kind) - static_cast<int>(ASTKind::Scope)];
+
+  _eval_scope: {
+    auto scope = ast->as<AST::Scope>();
+
+    for( auto&& x : scope->list )
+      this->eval(x);
+
+    goto _end;
+  }
+
+  _eval_if: {
+    auto x = ast->as<AST::If>();
+
+    auto cond = this->eval(x->cond);
+
+    if( !cond->type.equals(Type::Bool) ) {
+      Error(x->cond)
+        .setMessage("expected boolean expression")
+        .emit()
+        .exit();
+    }
+
+    if( cond->as<Bool>()->value )
+      this->eval(x->case_true);
+    else if( x->case_false )
+      this->eval(x->case_false);
+
+    goto _end;
+  }
+
+  _eval_switch:
+  
+  _eval_return:
+  
+  _eval_break:
+  
+  _eval_continue:
+  
+  _eval_loop:
+  
+  _eval_while:
+  
+  _eval_do_while:
+
+  _eval_for: {
+    auto x = ast->as<AST::For>();
+
+    // if already defined variable with same name of iterator, save object of that.
+    Object* save_iter_value = nullptr;
+    Object** saved_var_ptr = nullptr;
+
+    auto& iter = this->evalAsLeft(x->iter);
+    auto content = this->eval(x->content);
+
+    if( iter ) {
+      save_iter_value = iter;
+      saved_var_ptr = &iter;
+    }
+
+    if( !content->type.isIterable() ) {
+      Error(x->content)
+        .setMessage("object of type '" + content->type.toString() + "' is not iterable")
+        .emit()
+        .exit();
+    }
+
+    switch( content->type.kind ) {
+      case Type::String: {
+        auto _Str = content->as<String>();
+
+        for( auto&& _Char : _Str->value ) {
+          iter = _Char;
+          this->eval(x->code);
+        }
+
+        break;
+      }
+
+      case Type::Vector: {
+        auto _Vec = content->as<Vector>();
+
+        for( auto&& _Elem : _Vec->elements ) {
+          iter = _Elem;
+          this->eval(x->code);
+        }
+
+        break;
+      }
+
+      case Type::Dict: {
+        todo_impl;
+      }
+
+      case Type::Range: {
+        todo_impl;
+      }
+    }
+
+    // restore if saved
+    if( saved_var_ptr ) {
+      alert;
+      *saved_var_ptr = save_iter_value;
+    }
+  }
+
+  _end:;
+}
+
 
 //
 // === evalAsLeft ===
@@ -1265,9 +1336,7 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
 }
 
 Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
-  auto& stack = this->callStacks.emplace_back(func);
-
-  return stack;
+  return this->callStacks.emplace_back(func);
 }
 
 void Evaluator::pop_stack() {

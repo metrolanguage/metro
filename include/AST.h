@@ -64,6 +64,9 @@ enum class ASTKind {
   // control-statements
   If,
   Switch,
+  Return,
+  Break,
+  Continue,
 
   // loop-statements
   Loop,
@@ -129,7 +132,6 @@ struct Value : Base {
 
   ~Value()
   {
-    delete this->object;
   }
 };
 

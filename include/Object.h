@@ -21,6 +21,7 @@ using String  = _Primitive<std::u16string, Type::String>;
 struct Object {
   Type type;
   bool isMarked;
+  bool noDelete;
 
   template <class T>
   T* as() const {
@@ -41,7 +42,7 @@ struct Object {
   virtual std::string to_string() const = 0;
   virtual Object* clone() const = 0;
 
-  virtual ~Object() { }
+  virtual ~Object();
 
 protected:
   Object(Type type);
