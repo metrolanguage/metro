@@ -66,6 +66,15 @@ private:
     return this->globalStorage;
   }
 
+  Object** findVariable(std::string_view name, bool allowCreate = true) {
+    auto& storage = this->getCurrentStorage();
+
+    if( !storage.contains(name) && !allowCreate )
+      return nullptr;
+
+    return &storage[name];
+  }
+
   Storage  globalStorage;
   std::vector<CallStack> callStacks;
 

@@ -205,6 +205,36 @@ struct Dict : Object {
   }
 };
 
+struct Tuple : Object {
+  std::vector<Object*> elements;
+
+  std::string to_string() const {
+    std::string ret = "(";
+
+    for( auto&& e : this->elements ) {
+      ret += e->to_string();
+      if( e != *this->elements.rbegin() ) ret += ", ";
+    }
+
+    return ret + ')';
+  }
+
+  Tuple* clone() const {
+    auto tuple = new Tuple({ });
+
+    for( auto&& e : this->elements )
+      tuple->elements.emplace_back(e->clone());
+    
+    return tuple;
+  }
+
+  Tuple(std::vector<Object*> elements)
+    : Object(Type::Tuple),
+      elements(std::move(elements))
+  {
+  }
+};
+
 struct Range : Object {
   int64_t begin;
   int64_t end;

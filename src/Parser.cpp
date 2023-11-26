@@ -25,6 +25,7 @@ AST::Base* Parser::parse() {
 
       if( !this->eat(")") ) {
         do {
+          func->arguments.emplace_back(this->expectIdentifier());
         } while( this->eat(",") );
 
         this->expect(")");
@@ -45,6 +46,23 @@ AST::Base* Parser::parse() {
 
 AST::Base* Parser::factor() {
   auto tok = this->token;
+
+  if( this->eat("(") ) {
+    auto x = this->expr();
+
+    if( this->eat(",") ) {
+      auto tuple = new AST::Array(tok, { x });
+
+      do {
+        tuple->elements.emplace_back(this->expr());
+      } while( this->eat(",") );
+
+      x = tuple;
+    }
+
+    this->expect(")");
+    return x;
+  }
 
   if( this->eat("[") ) {
     auto ast = new AST::Array(tok);

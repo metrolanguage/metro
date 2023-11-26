@@ -53,8 +53,6 @@ void _Bind(Object* object) {
 }
 
 void _Unbind(Object* object) {
-  alertmsg("unbind: " << object);
-
   if( auto it = std::find(root.cbegin(), root.cend(), object); it != root.cend() ) {
     LOCK(
       root.erase(it);

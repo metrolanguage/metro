@@ -25,9 +25,15 @@ Object* Evaluator::eval(AST::Base* ast) {
     }
 
     case ASTKind::Variable: {
-      return
-        this->getCurrentStorage()[ast->as<AST::Variable>()->getName()]
-            ->clone();
+      auto pvar = this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+
+      if( !pvar )
+        Error(ast)
+          .setMessage("undefined variable")
+          .emit()
+          .exit();
+
+      return pvar;
     }
 
     case ASTKind::Array: {
@@ -35,6 +41,15 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       for( auto&& e : ast->as<AST::Array>()->elements )
         obj->append(this->eval(e));
+      
+      return obj;
+    }
+
+    case ASTKind::Tuple: {
+      auto obj = new Tuple({ });
+
+      for( auto&& e : ast->as<AST::Array>()->elements )
+        obj->elements.emplace_back(this->eval(e));
       
       return obj;
     }
@@ -49,6 +64,10 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       if( cf->userdef ) {
         auto& stack = this->push_stack(cf->userdef);
+
+        for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
+          stack.storage[arg->str] = *it++;
+        }
 
         this->eval(cf->userdef->scope);
 
@@ -93,7 +112,7 @@ Object* Evaluator::eval(AST::Base* ast) {
       }
 
       Error(member)
-        .setMessage("object of type '" + obj->type.to_string()
+        .setMessage("object of type '" + obj->type.toString()
           + "' don't have a member '" + name + "'")
         .emit()
         .exit();
@@ -195,9 +214,60 @@ Object* Evaluator::eval(AST::Base* ast) {
     case ASTKind::For: {
       auto x = ast->as<AST::For>();
 
-      auto& iter = this->evalAsLeft(x->iter);
+      // if already defined variable with same name of iterator, save object of that.
+      Object* save_iter_value = nullptr;
+      Object** saved_var_ptr = nullptr;
 
-      todo_impl;
+      auto& iter = this->evalAsLeft(x->iter);
+      auto content = this->eval(x->content);
+
+      if( iter ) {
+        save_iter_value = iter;
+        saved_var_ptr = &iter;
+      }
+
+      if( !content->type.isIterable() ) {
+        Error(x->content)
+          .setMessage("object of type '" + content->type.toString() + "' is not iterable")
+          .emit()
+          .exit();
+      }
+
+      switch( content->type.kind ) {
+        case Type::String: {
+          auto _Str = content->as<String>();
+
+          for( auto&& _Char : _Str->value ) {
+            iter = _Char;
+            this->eval(x->code);
+          }
+
+          break;
+        }
+
+        case Type::Vector: {
+          auto _Vec = content->as<Vector>();
+
+          for( auto&& _Elem : _Vec->elements ) {
+            iter = _Elem;
+            this->eval(x->code);
+          }
+
+          break;
+        }
+
+        case Type::Dict: {
+          todo_impl;
+        }
+
+        case Type::Range: {
+          todo_impl;
+        }
+      }
+
+      // restore if saved
+      if( saved_var_ptr )
+        *saved_var_ptr = save_iter_value;
 
       break;
     }
@@ -215,7 +285,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 Object*& Evaluator::evalAsLeft(AST::Base* ast) {
   switch( ast->kind ) {
     case ASTKind::Variable: {
-      return this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+      return *this->findVariable(ast->as<AST::Variable>()->getName());
     }
 
     case ASTKind::IndexRef: {
@@ -240,9 +310,10 @@ Object*& Evaluator::evalAsLeft(AST::Base* ast) {
 Object* Evaluator::evalOperator(AST::Expr* expr) {
   static void* operator_labels[] = {
     nullptr, // value
-    nullptr, // array
     nullptr, // variable
     nullptr, // callfunc
+    nullptr, // array
+    nullptr, // tuple
     nullptr, // memberaccess
     nullptr, // indexref
     nullptr, // not
@@ -277,8 +348,8 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   invalidOperator:
     Error(expr->token)
       .setMessage(
-        "invalid operator: '" + lhs->type.to_string() + "' "
-          + std::string(expr->token->str) + " '" + rhs->type.to_string() + "'")
+        "invalid operator: '" + lhs->type.toString() + "' "
+          + std::string(expr->token->str) + " '" + rhs->type.toString() + "'")
       .emit()
       .exit();
 
@@ -1188,7 +1259,7 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
   }
 
   Error(ast->right)
-    .setMessage("object of type '" + obj->type.to_string() + "' is not subscriptable")
+    .setMessage("object of type '" + obj->type.toString() + "' is not subscriptable")
     .emit()
     .exit();
 }
