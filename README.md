@@ -1,6 +1,6 @@
 example script:
 ```
-let num = 123;
+num = 123;
 
 def func(a, b) {
   return a + b;
