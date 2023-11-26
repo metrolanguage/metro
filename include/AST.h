@@ -22,6 +22,8 @@ enum class ASTKind {
 
   IndexRef,
 
+  Not,
+
   // expr
   Add,
   Sub,
@@ -38,7 +40,6 @@ enum class ASTKind {
   BiggerOrEqual,  // a >= b
 
   Equal,
-  NotEqual,
 
   // bit calc
   BitAND,   // &

@@ -138,6 +138,9 @@ AST::Base* Parser::unary() {
       new AST::Value(nullptr, new objects::Int(0)), this->indexref());
   }
 
+  if( this->eat("!") )
+    return new AST::Expr(ASTKind::Not, this->ate, this->indexref(), nullptr);
+
   return this->indexref();
 }
 
@@ -224,7 +227,8 @@ AST::Base* Parser::equality() {
     if( this->eat("==") )
       x = new AST::Expr(ASTKind::Equal, this->ate, x, this->compare());
     else if( this->eat("!=") )
-      x = new AST::Expr(ASTKind::NotEqual, this->ate, x, this->compare());
+      x = new AST::Expr(ASTKind::Not, this->ate,
+      new AST::Expr(ASTKind::Equal, this->ate, x, this->compare()), nullptr);
     else
       break;
   }
