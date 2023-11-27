@@ -12,6 +12,7 @@ static char const* names[] {
   "string",
   "vector",
   "dict",
+  "tuple",
   "range"
 };
 
@@ -32,14 +33,14 @@ bool Type::equals(Type const& type) const {
   return true;
 }
 
-std::string Type::to_string() const {
+std::string Type::toString() const {
   std::string ret = names[static_cast<int>(this->kind)];
 
   if( !this->params.empty() ) {
     ret += "<";
 
     for( auto&& p : this->params ) {
-      ret += p.to_string();
+      ret += p.toString();
       if( &p != &*this->params.rbegin() ) ret += ", ";
     }
 

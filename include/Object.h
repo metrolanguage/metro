@@ -21,6 +21,7 @@ using String  = _Primitive<std::u16string, Type::String>;
 struct Object {
   Type type;
   bool isMarked;
+  bool noDelete;
 
   template <class T>
   T* as() const {
@@ -41,7 +42,7 @@ struct Object {
   virtual std::string to_string() const = 0;
   virtual Object* clone() const = 0;
 
-  virtual ~Object() { }
+  virtual ~Object();
 
 protected:
   Object(Type type);
@@ -200,6 +201,36 @@ struct Dict : Object {
 
   Dict(std::vector<std::pair<Object*, Object*>>&& elements = { })
     : Object(Type::Dict),
+      elements(std::move(elements))
+  {
+  }
+};
+
+struct Tuple : Object {
+  std::vector<Object*> elements;
+
+  std::string to_string() const {
+    std::string ret = "(";
+
+    for( auto&& e : this->elements ) {
+      ret += e->to_string();
+      if( e != *this->elements.rbegin() ) ret += ", ";
+    }
+
+    return ret + ')';
+  }
+
+  Tuple* clone() const {
+    auto tuple = new Tuple({ });
+
+    for( auto&& e : this->elements )
+      tuple->elements.emplace_back(e->clone());
+    
+    return tuple;
+  }
+
+  Tuple(std::vector<Object*> elements)
+    : Object(Type::Tuple),
       elements(std::move(elements))
   {
   }

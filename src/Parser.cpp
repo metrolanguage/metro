@@ -25,6 +25,7 @@ AST::Base* Parser::parse() {
 
       if( !this->eat(")") ) {
         do {
+          func->arguments.emplace_back(this->expectIdentifier());
         } while( this->eat(",") );
 
         this->expect(")");
@@ -46,6 +47,23 @@ AST::Base* Parser::parse() {
 AST::Base* Parser::factor() {
   auto tok = this->token;
 
+  if( this->eat("(") ) {
+    auto x = this->expr();
+
+    if( this->eat(",") ) {
+      auto tuple = new AST::Array(tok, { x });
+
+      do {
+        tuple->elements.emplace_back(this->expr());
+      } while( this->eat(",") );
+
+      x = tuple;
+    }
+
+    this->expect(")");
+    return x;
+  }
+
   if( this->eat("[") ) {
     auto ast = new AST::Array(tok);
 
@@ -63,7 +81,7 @@ AST::Base* Parser::factor() {
   switch( tok->kind ) {
     case TokenKind::Int:
       this->next();
-      return new AST::Value(tok, new objects::Int(std::stoi(std::string(tok->str))));
+      return new AST::Value(tok, new objects::Int(std::stoll(std::string(tok->str))));
 
     case TokenKind::Float:
       this->next();
@@ -78,7 +96,6 @@ AST::Base* Parser::factor() {
       return new AST::Value(tok, new objects::String(std::string(tok->str)));
 
     case TokenKind::Identifier: {
-
       this->next();
 
       if( this->eat("(") ) {
@@ -344,6 +361,36 @@ AST::Base* Parser::stmt() {
     ast->code = this->stmt();
 
     return ast;
+  }
+
+  /*
+   * return
+   */
+  if( this->eat("return") ) {
+    auto x = new AST::Expr(ASTKind::Return, this->ate, nullptr, nullptr);
+
+    if( !this->eat(";") ) {
+      x->left = this->expr();
+      this->expect(";");
+    }
+
+    return x;
+  }
+
+  /*
+   * break
+   */
+  if( this->eat("break") ) {
+    this->expect(";");
+    return new AST::Expr(ASTKind::Break, this->ate, nullptr, nullptr);
+  }
+
+  /*
+   * continue
+   */
+  if( this->eat("continue") ) {
+    this->expect(";");
+    return new AST::Expr(ASTKind::Continue, this->ate, nullptr, nullptr);
   }
 
   auto x = this->expr();

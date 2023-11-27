@@ -29,6 +29,8 @@ Metro::~Metro()
 
 int Metro::main() {
 
+  GC::enable();
+
   SourceLoc source{ "test.metro" };
 
   Lexer lexer{ source };
@@ -50,8 +52,6 @@ int Metro::main() {
   Error::check();
 
   Evaluator eval;
-
-  GC::enable();
 
   eval.eval(ast);
 

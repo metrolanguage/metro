@@ -45,86 +45,100 @@
 #define TAG_TODOIMPL    _RGB(50,255,255)  "#not implemented here"
 #define TAG_PANIC       COL_RED "panic! "
 
-#define debug(...) __VA_ARGS__
+#ifdef _METRO_DEBUG_
 
-#define _streamalert(tag,e...) \
-  ({ std::stringstream ss; \
-    ss << e; \
-  _alert_impl(tag, ss.str().c_str(), \
-  __FILE__, __LINE__); })
+  #define debug(...) __VA_ARGS__
 
-#define alert \
-  _alert_impl(TAG_ALERT, nullptr, __FILE__, __LINE__)
+  #define _streamalert(tag,e...) \
+    ({ std::stringstream ss; \
+      ss << e; \
+    _alert_impl(tag, ss.str().c_str(), \
+    __FILE__, __LINE__); })
 
-#define alertmsg(e...) \
-  _streamalert(TAG_ALERTMSG, COL_WHITE << e)
+  #define alert \
+    _alert_impl(TAG_ALERT, nullptr, __FILE__, __LINE__)
 
-#if ENABLE_CDSTRUCT
-#define alert_ctor \
-  _streamalert(TAG_ALERTCTOR, \
-    __func__ << "  " << this)
+  #define alertmsg(e...) \
+    _streamalert(TAG_ALERTMSG, COL_WHITE << e)
 
-#define alert_dtor \
-  _streamalert(TAG_ALERTDTOR, __func__ << " " << this)
-#else
-#define alert_ctor  0
-#define alert_dtor  0
-#endif
+  #if ENABLE_CDSTRUCT
+    #define alert_ctor \
+      _streamalert(TAG_ALERTCTOR, \
+        __func__ << "  " << this)
 
-#define todo_impl \
-  _alert_impl(TAG_TODOIMPL,nullptr,__FILE__,__LINE__), \
-  exit(1)
+    #define alert_dtor \
+      _streamalert(TAG_ALERTDTOR, __func__ << " " << this)
+  #else
+    #define alert_ctor  0
+    #define alert_dtor  0
+  #endif
 
-#define panic(e...) \
-  {_streamalert(TAG_PANIC,e); std::exit(222);}
+  #define todo_impl \
+    _alert_impl(TAG_TODOIMPL,nullptr,__FILE__,__LINE__), \
+    exit(1)
 
-inline char*
-_make_location_str(char* buf, char const* file, size_t line) {
-  auto sp = strchr(file, '/');
+  #define panic(e...) \
+    {_streamalert(TAG_PANIC,e); std::exit(222);}
 
-  while( sp )
-    if( auto p = strchr(sp + 1, '/'); p )
-      sp = p + 1;
-    else
-      break;
+  inline char*
+  _make_location_str(char* buf, char const* file, size_t line) {
+    auto sp = strchr(file, '/');
 
-  sprintf(buf, "%s:%zu:", sp ? sp : file, line);
-  return buf;
-}
+    while( sp )
+      if( auto p = strchr(sp + 1, '/'); p )
+        sp = p + 1;
+      else
+        break;
 
-inline void
-_alert_impl(  char const* tag, char const* msg,
-              char const* file, size_t line) {
-  char buf[0x100];
-  char buf2[0x400] { ' ' };
-
-  _make_location_str(buf, file, line);
-  size_t len = sprintf(buf2,
-    COL_BOLD _BRGB(20,20,20)
-      "        %s%-30s %s %s",
-    _RGB(150, 255, 0),
-    buf,
-    tag,
-    msg ? msg : ""
-  );
-
-  size_t endpos = 200;
-
-  for(size_t i=0;i<len;){
-    if(buf2[i]=='\033'){
-      do{
-        endpos++;
-        i++;
-      }while(buf2[i]!='m');
-    }
-    else {
-      i++;
-    }
+    sprintf(buf, "%s:%zu:", sp ? sp : file, line);
+    return buf;
   }
 
-  memset(buf2 + len, ' ', 0x400-len);
-  buf2[endpos] = 0;
+  inline void
+  _alert_impl(  char const* tag, char const* msg,
+                char const* file, size_t line) {
+    char buf[0x100];
+    char buf2[0x400] { ' ' };
 
-  fprintf(stderr,
-    "%s" COL_DEFAULT "\n", buf2);
-}
+    _make_location_str(buf, file, line);
+    size_t len = sprintf(buf2,
+      COL_BOLD _BRGB(20,20,20)
+        "        %s%-30s %s %s",
+      _RGB(150, 255, 0),
+      buf,
+      tag,
+      msg ? msg : ""
+    );
+
+    size_t endpos = 200;
+
+    for(size_t i=0;i<len;){
+      if(buf2[i]=='\033'){
+        do{
+          endpos++;
+          i++;
+        }while(buf2[i]!='m');
+      }
+      else {
+        i++;
+      }
+    }
+
+    memset(buf2 + len, ' ', 0x400-len);
+    buf2[endpos] = 0;
+
+    printf("%s" COL_DEFAULT "\n", buf2);
+  }
+#else
+  #define debug(...)      (void)0;
+  #define alert           (void)0
+  #define alertmsg(...)   (void)0
+  #define alert_ctor      (void)0
+  #define alert_dtor      (void)0
+
+  #define todo_impl \
+    { printf("%s:%d: todo_impl\n",__FILE__,__LINE__),std::exit(1); }
+  
+  #define panic(...) \
+    { printf("%s:%d: panic!\n",__FILE__,__LINE__),std::exit(1); }
+#endif

@@ -7,9 +7,19 @@
 #include "Utils.h"
 #include "Error.h"
 
+#define LABEL_TABLE   \
+  static void* _labels[]
+
 namespace metro {
 
 using namespace objects;
+
+Evaluator::Evaluator()
+  : _loopScope(nullptr),
+    _funcScope(nullptr),
+    _scope(nullptr)
+  {
+  }
 
 //
 // === eval ===
@@ -18,6 +28,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
+    case ASTKind::Namespace:
       break;
 
     case ASTKind::Value: {
@@ -25,9 +36,15 @@ Object* Evaluator::eval(AST::Base* ast) {
     }
 
     case ASTKind::Variable: {
-      return
-        this->getCurrentStorage()[ast->as<AST::Variable>()->getName()]
-            ->clone();
+      auto pvar = this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+
+      if( !pvar )
+        Error(ast)
+          .setMessage("undefined variable")
+          .emit()
+          .exit();
+
+      return pvar;
     }
 
     case ASTKind::Array: {
@@ -35,6 +52,15 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       for( auto&& e : ast->as<AST::Array>()->elements )
         obj->append(this->eval(e));
+      
+      return obj;
+    }
+
+    case ASTKind::Tuple: {
+      auto obj = new Tuple({ });
+
+      for( auto&& e : ast->as<AST::Array>()->elements )
+        obj->elements.emplace_back(this->eval(e));
       
       return obj;
     }
@@ -50,11 +76,20 @@ Object* Evaluator::eval(AST::Base* ast) {
       if( cf->userdef ) {
         auto& stack = this->push_stack(cf->userdef);
 
+        for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
+          GC::unbind(stack.storage[arg->str] = *it++);
+        }
+
+        auto _save = this->_funcScope;
+
         this->eval(cf->userdef->scope);
 
         auto result = stack.result;
 
         this->pop_stack();
+
+        if( !result )
+          return None::getNone();
 
         return result;
       }
@@ -93,7 +128,7 @@ Object* Evaluator::eval(AST::Base* ast) {
       }
 
       Error(member)
-        .setMessage("object of type '" + obj->type.to_string()
+        .setMessage("object of type '" + obj->type.toString()
           + "' don't have a member '" + name + "'")
         .emit()
         .exit();
@@ -183,24 +218,18 @@ Object* Evaluator::eval(AST::Base* ast) {
       return this->evalAsLeft(assign->left) = value;
     }
 
-    case ASTKind::Scope: {
-      auto scope = ast->as<AST::Scope>();
-
-      for( auto&& x : scope->list )
-        this->eval(x);
-
+    case ASTKind::Scope:
+    case ASTKind::If:
+    case ASTKind::Switch:
+    case ASTKind::Return:
+    case ASTKind::Break:
+    case ASTKind::Continue:
+    case ASTKind::Loop:
+    case ASTKind::While:
+    case ASTKind::DoWhile:
+    case ASTKind::For:
+      this->evalStatements(ast);
       break;
-    }
-
-    case ASTKind::For: {
-      auto x = ast->as<AST::For>();
-
-      auto& iter = this->evalAsLeft(x->iter);
-
-      todo_impl;
-
-      break;
-    }
 
     default:
       return this->evalOperator(ast->as<AST::Expr>());
@@ -209,13 +238,196 @@ Object* Evaluator::eval(AST::Base* ast) {
   return None::getNone();
 }
 
+void Evaluator::evalStatements(AST::Base* ast) {
+  LABEL_TABLE {
+    &&_eval_scope,
+    &&_eval_if,
+    &&_eval_switch,
+    &&_eval_return,
+    &&_eval_break,
+    &&_eval_continue,
+    &&_eval_loop,
+    &&_eval_while,
+    &&_eval_do_while,
+    &&_eval_for,
+  };
+
+  goto *_labels[static_cast<int>(ast->kind) - static_cast<int>(ASTKind::Scope)];
+
+  _eval_scope: {
+    auto scope = ast->as<AST::Scope>();
+
+    ScopeEvaluationFlags
+      flags, *save = this->_scope;
+
+    this->_scope = &flags;
+
+    for( auto&& x : scope->list ) {
+      this->eval(x);
+
+      if( this->inFunction() ) {
+          if( this->getCurrentCallStack().isReturned ) {
+          break;
+        }
+      }
+
+      if( _loopScope ) {
+        if( _loopScope->isBreaked || _loopScope->isContinued )
+          break;
+      }
+    }
+
+    this->_scope = save;
+
+    goto _end;
+  }
+
+  _eval_if: {
+    auto x = ast->as<AST::If>();
+
+    auto cond = this->eval(x->cond);
+
+    if( !cond->type.equals(Type::Bool) ) {
+      Error(x->cond)
+        .setMessage("expected boolean expression")
+        .emit()
+        .exit();
+    }
+
+    if( cond->as<Bool>()->value )
+      this->eval(x->case_true);
+    else if( x->case_false )
+      this->eval(x->case_false);
+
+    goto _end;
+  }
+
+  _eval_switch:
+    todo_impl;
+  
+  _eval_return: {
+    if( !this->inFunction() ) {
+      Error(ast)
+        .setMessage("cannot use 'return' out side of function")
+        .emit()
+        .exit();
+    }
+
+    auto& stack = this->getCurrentCallStack();
+
+    stack.isReturned = true;
+
+    if( auto expr = ast->as<AST::Expr>()->left; expr )
+      stack.result = this->eval(expr);
+
+    goto _end;
+  }
+  
+  _eval_break:
+    todo_impl;
+  
+  _eval_continue:
+    todo_impl;
+  
+  _eval_loop:
+    todo_impl;
+  
+  _eval_while: {
+    auto x = ast->as<AST::While>();
+
+    while( true ) {
+      auto cond = this->eval(x->cond);
+
+      if( !cond->type.equals(Type::Bool) )
+        Error(x->cond)
+          .setMessage("expected boolean expression")
+          .emit()
+          .exit();
+      
+      if( !cond->as<Bool>()->value )
+        break;
+
+      this->eval(x->code);
+    }
+
+    goto _end;
+  }
+  
+  _eval_do_while:
+    todo_impl;
+
+  _eval_for: {
+    auto x = ast->as<AST::For>();
+
+    // if already defined variable with same name of iterator, save object of that.
+    Object* save_iter_value = nullptr;
+    Object** saved_var_ptr = nullptr;
+
+    auto& iter = this->evalAsLeft(x->iter);
+    auto content = this->eval(x->content);
+
+    if( iter ) {
+      save_iter_value = iter;
+      saved_var_ptr = &iter;
+    }
+
+    if( !content->type.isIterable() ) {
+      Error(x->content)
+        .setMessage("object of type '" + content->type.toString() + "' is not iterable")
+        .emit()
+        .exit();
+    }
+
+    switch( content->type.kind ) {
+      case Type::String: {
+        auto _Str = content->as<String>();
+
+        for( auto&& _Char : _Str->value ) {
+          iter = _Char;
+          this->eval(x->code);
+        }
+
+        break;
+      }
+
+      case Type::Vector: {
+        auto _Vec = content->as<Vector>();
+
+        for( auto&& _Elem : _Vec->elements ) {
+          iter = _Elem;
+          this->eval(x->code);
+        }
+
+        break;
+      }
+
+      case Type::Dict: {
+        todo_impl;
+      }
+
+      case Type::Range: {
+        todo_impl;
+      }
+    }
+
+    // restore if saved
+    if( saved_var_ptr ) {
+      alert;
+      *saved_var_ptr = save_iter_value;
+    }
+  }
+
+  _end:;
+}
+
+
 //
 // === evalAsLeft ===
 //
 Object*& Evaluator::evalAsLeft(AST::Base* ast) {
   switch( ast->kind ) {
     case ASTKind::Variable: {
-      return this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+      return *this->findVariable(ast->as<AST::Variable>()->getName());
     }
 
     case ASTKind::IndexRef: {
@@ -240,9 +452,10 @@ Object*& Evaluator::evalAsLeft(AST::Base* ast) {
 Object* Evaluator::evalOperator(AST::Expr* expr) {
   static void* operator_labels[] = {
     nullptr, // value
-    nullptr, // array
     nullptr, // variable
     nullptr, // callfunc
+    nullptr, // array
+    nullptr, // tuple
     nullptr, // memberaccess
     nullptr, // indexref
     nullptr, // not
@@ -277,8 +490,8 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   invalidOperator:
     Error(expr->token)
       .setMessage(
-        "invalid operator: '" + lhs->type.to_string() + "' "
-          + std::string(expr->token->str) + " '" + rhs->type.to_string() + "'")
+        "invalid operator: '" + lhs->type.toString() + "' "
+          + std::string(expr->token->str) + " '" + rhs->type.toString() + "'")
       .emit()
       .exit();
 
@@ -1188,15 +1401,13 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
   }
 
   Error(ast->right)
-    .setMessage("object of type '" + obj->type.to_string() + "' is not subscriptable")
+    .setMessage("object of type '" + obj->type.toString() + "' is not subscriptable")
     .emit()
     .exit();
 }
 
 Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
-  auto& stack = this->callStacks.emplace_back(func);
-
-  return stack;
+  return this->callStacks.emplace_back(func);
 }
 
 void Evaluator::pop_stack() {
@@ -1208,6 +1419,5 @@ void Evaluator::pop_stack() {
 
   this->callStacks.pop_back();
 }
-
 
 } // namespace metro

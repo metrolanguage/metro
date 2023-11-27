@@ -13,10 +13,12 @@ namespace builtin {
 enum class ASTKind {
   // factor
   Value,
-  Array,
   Variable,
   CallFunc,
   
+  Array,
+  Tuple,
+
   // member access
   MemberAccess,
 
@@ -62,6 +64,9 @@ enum class ASTKind {
   // control-statements
   If,
   Switch,
+  Return,
+  Break,
+  Continue,
 
   // loop-statements
   Loop,
@@ -127,7 +132,6 @@ struct Value : Base {
 
   ~Value()
   {
-    delete this->object;
   }
 };
 
@@ -143,8 +147,9 @@ struct Variable : WithName {
 struct Array : Base {
   std::vector<Base*> elements;
 
-  Array(Token* token)
-    : Base(ASTKind::Array, token)
+  Array(Token* token, std::vector<Base*> elems = { })
+    : Base(ASTKind::Array, token),
+      elements(std::move(elems))
   {
   }
 
@@ -195,7 +200,9 @@ struct Expr : Base {
   ~Expr()
   {
     delete this->left;
-    delete this->right;
+
+    if( this->right )
+      delete this->right;
   }
 };
 
@@ -312,24 +319,8 @@ struct For : Base {
 };
 
 struct Function : Base {
-  struct Argument {
-    Base* type;
-    Token* name;
-
-    Argument(Base* type, Token* name)
-      : type(type),
-        name(name)
-    {
-    }
-
-    ~Argument()
-    {
-      delete this->type;
-    }
-  };
-
   Token* name_token;
-  std::vector<Argument> arguments;
+  std::vector<Token*> arguments;
   Scope* scope;
 
   std::string_view getName() const {

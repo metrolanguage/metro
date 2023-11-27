@@ -13,10 +13,11 @@
 #include <algorithm>
 #include "GC.h"
 #include "alert.h"
+#include "metro.h"
 
 //  The maximum count of object in memory.
 //  Collect all objects when overed this count.
-#define OBJECT_MEMORY_MAXIMUM   4096
+#define OBJECT_MEMORY_MAXIMUM   (1 << 14)
 
 #define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
 
@@ -33,13 +34,16 @@ std::thread* thread;
 size_t mark_count;
 
 std::vector<Object*> _Memory;
+std::vector<Object*> _MemorySub;
 std::vector<Object*> root; /* binded objects for local-v */
 
 Object* mAppend(Object* object) {
-  for( auto&& p : _Memory )
-    if( p == nullptr ) {
+  std::lock_guard Lock(mtx);
+
+  for( auto&& p : _Memory ) {
+    if( p == nullptr )
       return p = object;
-    }
+  }
 
   return _Memory.emplace_back(object);
 }
@@ -53,8 +57,6 @@ void _Bind(Object* object) {
 }
 
 void _Unbind(Object* object) {
-  alertmsg("unbind: " << object);
-
   if( auto it = std::find(root.cbegin(), root.cend(), object); it != root.cend() ) {
     LOCK(
       root.erase(it);
@@ -90,7 +92,7 @@ void _Mark(Object* object) {
 }
 
 void _Unmark() {
-  for( auto&& p : _Memory )
+  for( auto&& p : _MemorySub )
     if( p ) p->isMarked = false;
 }
 
@@ -101,25 +103,44 @@ void _MarkAll() {
     _Mark(r);
 
   if( mark_count >= OBJECT_MEMORY_MAXIMUM ) {
-    printf("metro: out of memory.\n");
-    std::exit(1);
+    Metro::getInstance()->fatalError("metro: out of memory.\n");
   }
 }
 
 void _CollectThreadFunc() {
-  _Unmark();
   _MarkAll();
 
-  for( auto&& pObj : _Memory )
-    if( pObj && !pObj->isMarked ) {
-      delete pObj;
-      pObj = nullptr;
+  LOCK(
+    _MemorySub = _Memory;
+    _Memory.clear();
+  )
+
+  for( auto it = _MemorySub.begin(); it != _MemorySub.end(); ) {
+    if( *it && !(*it)->noDelete && !(*it)->isMarked ) {
+      delete *it;
+
+      _MemorySub.erase(it);
+
+      continue;
     }
+    else {
+      it++;
+    }
+  }
+
+  LOCK(
+    for( auto&& obj : _Memory ) {
+      _MemorySub.emplace_back(obj);
+    }
+
+    _Memory = std::move(_MemorySub);
+  )
 
   _isBusy = false;
 }
 
 void _Collect() {
+
   if( _isBusy )
     return;
 
@@ -128,14 +149,19 @@ void _Collect() {
     delete thread;
   }
 
+
   _isBusy = true;
   thread = new std::thread(_CollectThreadFunc);
+
 }
 
 } // unonymous
 
 void enable() {
   _isEnabled = true;
+
+  _Memory.reserve(OBJECT_MEMORY_MAXIMUM);
+  _MemorySub.reserve(OBJECT_MEMORY_MAXIMUM);
 }
 
 bool isEnabled() {
