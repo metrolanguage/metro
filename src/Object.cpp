@@ -1,3 +1,4 @@
+#include <cassert>
 #include <map>
 #include "alert.h"
 #include "GC.h"
@@ -38,6 +39,47 @@ Object::~Object()
 
   if( GC::isEnabled() )
     __dbg_map[this] = 0;
+}
+
+bool Object::equals(Object* object) const {
+  if( !this->type.equals(object->type) )
+    return false;
+  
+  switch( this->type.kind ) {
+    case Type::Int:
+      return this->as<Int>()->equals(object->as<Int>());
+      
+    case Type::Float:
+      return this->as<Float>()->equals(object->as<Float>());
+      
+    case Type::USize:
+      return this->as<USize>()->equals(object->as<USize>());
+      
+    case Type::Bool:
+      return this->as<Bool>()->equals(object->as<Bool>());
+      
+    case Type::Char:
+      return this->as<Char>()->equals(object->as<Char>());
+
+    case Type::String:
+      return this->as<String>()->equals(object->as<String>());
+
+    case Type::Vector:
+      return this->as<Vector>()->equals(object->as<Vector>());
+
+    case Type::Dict:
+      return this->as<Dict>()->equals(object->as<Dict>());
+
+    case Type::Tuple:
+      return this->as<Tuple>()->equals(object->as<Tuple>());
+
+    case Type::Range:
+      return this->as<Range>()->equals(object->as<Range>());
+  }
+
+  assert(this->type.equals(Type::None));
+  
+  return true;
 }
 
 std::string _Primitive<std::u16string, Type::String>::to_string() const {
