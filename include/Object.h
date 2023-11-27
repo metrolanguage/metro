@@ -102,6 +102,9 @@ struct _Primitive<std::u16string, Type::String> : Object {
   _Primitive(std::string const& str);
   _Primitive(std::vector<Char*> val);
 
+  String* append(Char* ch);
+  String* append(String* str);
+
 private:
   static inline std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
   friend struct _Primitive<char16_t, Type::Char>;

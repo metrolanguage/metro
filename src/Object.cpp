@@ -71,4 +71,16 @@ _Primitive<std::u16string, Type::String>::_Primitive(std::vector<Char*> val)
 {
 }
 
+String* String::append(Char* ch) {
+  this->value.emplace_back(ch);
+  return this;
+}
+
+String* String::append(String* str) {
+  for( auto&& c : str->value )
+    this->append(c->clone());
+
+  return this;
+}
+
 } // namespace metro::objects
