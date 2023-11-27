@@ -5,6 +5,8 @@
 namespace metro {
 
 static char const* punctuaters[] {
+  "<<=",
+  ">>=",
   "->",
   "<<",
   ">>",
@@ -12,6 +14,7 @@ static char const* punctuaters[] {
   ">=",
   "==",
   "!=",
+  "..",
   "<",
   ">",
   "+",

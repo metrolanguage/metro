@@ -406,7 +406,13 @@ void Evaluator::evalStatements(AST::Base* ast) {
       }
 
       case Type::Range: {
-        todo_impl;
+        auto range = content->as<Range>();
+
+        for( iter = new Int(range->begin); iter->as<Int>()->value < range->end; iter->as<Int>()->value++ ) {
+          this->eval(x->code);
+        }
+
+        break;
       }
     }
 
@@ -1386,7 +1392,7 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
     
     default:
       Error(ast->right)
-        .setMessage("expected 'usize' object")
+        .setMessage("expected 'int' or 'usize' object")
         .emit()
         .exit();
   }
