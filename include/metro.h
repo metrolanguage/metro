@@ -29,6 +29,9 @@ public:
     Token*            token;
     AST::Base*        ast;
     objects::Object*  result;
+
+    ScriptInfo(std::string const& path);
+    ~ScriptInfo();
   };
 
   Metro(int argc, char** argv);
@@ -36,22 +39,25 @@ public:
 
   int main();
 
+  ScriptInfo const* getRunningScript();
 
   //
   // emit fatal error and exit with code 1.
   [[noreturn]]
   void fatalError(std::string const& msg);
 
-
-  void evaluateScript(ScriptInfo& script);
-
-
   static Metro* getInstance();
 
 private:
 
+  void evaluateScript(ScriptInfo& script);
+
+  void parseArguments();
+
   std::vector<std::string> args;
   std::vector<ScriptInfo> scripts;
+
+  ScriptInfo const* currentScript;
 
   static std::vector<Error> emittedErrors; /* in Error.cpp */
 

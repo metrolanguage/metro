@@ -20,5 +20,4 @@ std::string open_text_file(std::string const& path) {
   return ret;
 }
 
-
 } // namespace metro::utils

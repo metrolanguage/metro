@@ -11,11 +11,37 @@
 #include "Evaluator.h"
 #include "GC.h"
 
+static constexpr auto helpMessage = R"xyz(
+Metro v0.0.1
+(C) Aoki & all members of the team metrolanguage
+
+usage: metro [options] [script files...]
+
+options:
+  -h --help     show this info
+)xyz";
+
 namespace metro {
 
 static Metro* g_instance;
 
+Metro::ScriptInfo::ScriptInfo(std::string const& path)
+  : source(path),
+    token(nullptr),
+    ast(nullptr),
+    result(nullptr)
+{
+}
+
+Metro::ScriptInfo::~ScriptInfo()
+{
+  delete this->result;
+  delete this->ast;
+  delete this->token;
+}
+
 Metro::Metro(int argc, char** argv)
+  : currentScript(nullptr)
 {
   g_instance = this;
   
@@ -31,37 +57,24 @@ int Metro::main() {
 
   GC::initialize();
 
-  SourceLoc source{ "test.metro" };
+  this->parseArguments();
 
-  Lexer lexer{ source };
+  if( this->scripts.empty() ) {
+    std::cout << "metro: no input files." << std::endl;
+    std::exit(0);
+  }
 
-  auto token = lexer.lex();
+  for( auto&& script : this->scripts ) {
+    this->evaluateScript(script);
+  }
 
-  Error::check();
-
-  Parser parser{ token };
-
-  auto ast = parser.parse();
-
-  Error::check();
-
-  Checker checker{ ast->as<AST::Scope>() };
-
-  checker.check(ast);
-
-  Error::check();
-
-  Evaluator eval;
-
-  eval.eval(ast);
-
-  GC::doCollectForce();
   GC::exitGC();
 
-  delete ast;
-  delete token;
-
   return 0;
+}
+
+Metro::ScriptInfo const* Metro::getRunningScript() {
+  return this->currentScript;
 }
 
 void Metro::fatalError(std::string const& msg) {
@@ -73,5 +86,46 @@ Metro* Metro::getInstance() {
   return g_instance;
 }
 
+void Metro::evaluateScript(Metro::ScriptInfo& script) {
+  this->currentScript = &script;
+
+  Lexer lexer{ script.source };
+
+  script.token = lexer.lex();
+
+  Error::check();
+
+  Parser parser{ script.token };
+
+  script.ast = parser.parse();
+
+  Error::check();
+
+  Checker checker{ script.ast->as<AST::Scope>() };
+
+  checker.check(script.ast);
+
+  Error::check();
+
+  Evaluator eval;
+
+  eval.eval(script.ast);
+
+  GC::doCollectForce();
+}
+
+void Metro::parseArguments() {
+  for( auto it = args.begin() + 1; it != args.end(); it++ ) {
+    auto& arg = *it;
+
+    if( arg == "-h" || arg == "--help" ) {
+      std::cout << helpMessage << std::endl;
+      std::exit(1);
+    }
+    else {
+      this->scripts.emplace_back(arg);
+    }
+  }
+}
 
 } // namespace metro

@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <codecvt>
-#include <limits>
 #include <locale>
 #include "Type.h"
 #include "Utils.h"
@@ -39,6 +38,8 @@ struct Object {
     return false;
   }
 
+  bool equals(Object* object) const;
+
   virtual std::string to_string() const = 0;
   virtual Object* clone() const = 0;
 
@@ -55,6 +56,10 @@ struct None : Object {
 
   None* clone() const {
     return new None;
+  }
+
+  bool equals(None*) const {
+    return true;
   }
 
   static None* getNone() {
@@ -84,6 +89,10 @@ struct _Primitive : Object {
     return new _Primitive<T, k>(this->value);
   }
 
+  bool equals(_Primitive* obj) const {
+    return this->value == obj->value;
+  }
+
   _Primitive(T val = T{ })
     : Object(k),
       value(val)
@@ -98,9 +107,14 @@ struct _Primitive<std::u16string, Type::String> : Object {
   std::string to_string() const;
   String* clone() const;
 
+  bool equals(String*) const;
+
   _Primitive(std::u16string const& str = u"");
   _Primitive(std::string const& str);
   _Primitive(std::vector<Char*> val);
+
+  String* append(Char* ch);
+  String* append(String* str);
 
 private:
   static inline std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
@@ -117,6 +131,10 @@ struct _Primitive<char16_t, Type::Char> : Object {
 
   Char* clone() const {
     return new Char(this->value);
+  }
+
+  bool equals(Char* c) const {
+    return this->value == c->value;
   }
 
   _Primitive(char16_t val = 0)
@@ -159,6 +177,17 @@ struct Vector : Object {
     return vec;
   }
 
+  bool equals(Vector* vec) const {
+    if( this->elements.size() != vec->elements.size() )
+      return false;
+
+    for( auto it = this->elements.begin(); auto&& e : vec->elements )
+      if( !(*it)->equals(e) )
+        return false;
+
+    return true;
+  }
+
   Vector(std::vector<Object*> elements = { })
     : Object(Type::Vector),
       elements(std::move(elements))
@@ -199,6 +228,20 @@ struct Dict : Object {
     return dict;
   }
 
+  bool equals(Dict* dict) const {
+    if( this->elements.size() != dict->elements.size() )
+      return false;
+
+    for( auto it = dict->elements.begin(); auto&& [k, v] : this->elements ) {
+      auto&& [k2, v2] = *it++;
+
+      if( !k->equals(k2) || !v->equals(v2) )
+        return false;
+    }
+
+    return true;
+  }
+
   Dict(std::vector<std::pair<Object*, Object*>>&& elements = { })
     : Object(Type::Dict),
       elements(std::move(elements))
@@ -229,6 +272,17 @@ struct Tuple : Object {
     return tuple;
   }
 
+  bool equals(Tuple* tu) const {
+    if( this->elements.size() != tu->elements.size() )
+      return false;
+
+    for( auto it = this->elements.begin(); auto&& e : tu->elements )
+      if( !(*it)->equals(e) )
+        return false;
+
+    return true;
+  }
+
   Tuple(std::vector<Object*> elements)
     : Object(Type::Tuple),
       elements(std::move(elements))
@@ -246,6 +300,10 @@ struct Range : Object {
 
   Range* clone() const {
     return new Range(this->begin, this->end);
+  }
+
+  bool equals(Range* range) const {
+    return this->begin == range->begin && this->end == range->end;
   }
 
   Range(int64_t begin, int64_t end)
