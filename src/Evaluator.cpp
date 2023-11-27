@@ -299,8 +299,12 @@ void Evaluator::evalStatements(AST::Base* ast) {
     goto _end;
   }
 
-  _eval_switch:
-    todo_impl;
+  _eval_switch: {
+    auto sw = ast->as<AST::Switch>();
+
+
+    goto _end;
+  }
   
   _eval_return: {
     if( !this->inFunction() ) {
