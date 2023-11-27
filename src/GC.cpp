@@ -124,7 +124,7 @@ void _CollectThreadFunc() {
       continue;
     }
     else {
-      it++;
+      (*it++)->isMarked = false;
     }
   }
 
