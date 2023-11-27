@@ -189,7 +189,7 @@ AST::Base* Parser::add() {
     if( this->eat("+") )
       x = new AST::Expr(ASTKind::Add, this->ate, x, this->mul());
     else if( this->eat("-") )
-      x = new AST::Expr(ASTKind::Add, this->ate, x, this->mul());
+      x = new AST::Expr(ASTKind::Sub, this->ate, x, this->mul());
     else
       break;
   }
@@ -249,7 +249,7 @@ AST::Base* Parser::equality() {
       x = new AST::Expr(ASTKind::Equal, this->ate, x, this->compare());
     else if( this->eat("!=") )
       x = new AST::Expr(ASTKind::Not, this->ate,
-      new AST::Expr(ASTKind::Equal, this->ate, x, this->compare()), nullptr);
+            new AST::Expr(ASTKind::Equal, this->ate, x, this->compare()), nullptr);
     else
       break;
   }
