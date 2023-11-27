@@ -14,6 +14,13 @@ namespace metro {
 
 using namespace objects;
 
+Evaluator::Evaluator()
+  : _loopScope(nullptr),
+    _funcScope(nullptr),
+    _scope(nullptr)
+  {
+  }
+
 //
 // === eval ===
 //
@@ -73,11 +80,16 @@ Object* Evaluator::eval(AST::Base* ast) {
           GC::unbind(stack.storage[arg->str] = *it++);
         }
 
+        auto _save = this->_funcScope;
+
         this->eval(cf->userdef->scope);
 
         auto result = stack.result;
 
         this->pop_stack();
+
+        if( !result )
+          return None::getNone();
 
         return result;
       }
@@ -245,8 +257,27 @@ void Evaluator::evalStatements(AST::Base* ast) {
   _eval_scope: {
     auto scope = ast->as<AST::Scope>();
 
-    for( auto&& x : scope->list )
+    ScopeEvaluationFlags
+      flags, *save = this->_scope;
+
+    this->_scope = &flags;
+
+    for( auto&& x : scope->list ) {
       this->eval(x);
+
+      if( this->inFunction() ) {
+          if( this->getCurrentCallStack().isReturned ) {
+          break;
+        }
+      }
+
+      if( _loopScope ) {
+        if( _loopScope->isBreaked || _loopScope->isContinued )
+          break;
+      }
+    }
+
+    this->_scope = save;
 
     goto _end;
   }
@@ -272,18 +303,58 @@ void Evaluator::evalStatements(AST::Base* ast) {
   }
 
   _eval_switch:
+    todo_impl;
   
-  _eval_return:
+  _eval_return: {
+    if( !this->inFunction() ) {
+      Error(ast)
+        .setMessage("cannot use 'return' out side of function")
+        .emit()
+        .exit();
+    }
+
+    auto& stack = this->getCurrentCallStack();
+
+    stack.isReturned = true;
+
+    if( auto expr = ast->as<AST::Expr>()->left; expr )
+      stack.result = this->eval(expr);
+
+    goto _end;
+  }
   
   _eval_break:
+    todo_impl;
   
   _eval_continue:
+    todo_impl;
   
   _eval_loop:
+    todo_impl;
   
-  _eval_while:
+  _eval_while: {
+    auto x = ast->as<AST::While>();
+
+    while( true ) {
+      auto cond = this->eval(x->cond);
+
+      if( !cond->type.equals(Type::Bool) )
+        Error(x->cond)
+          .setMessage("expected boolean expression")
+          .emit()
+          .exit();
+      
+      if( !cond->as<Bool>()->value )
+        break;
+
+      this->eval(x->code);
+    }
+
+    goto _end;
+  }
   
   _eval_do_while:
+    todo_impl;
 
   _eval_for: {
     auto x = ast->as<AST::For>();
@@ -1348,6 +1419,5 @@ void Evaluator::pop_stack() {
 
   this->callStacks.pop_back();
 }
-
 
 } // namespace metro

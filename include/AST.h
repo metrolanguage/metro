@@ -200,7 +200,9 @@ struct Expr : Base {
   ~Expr()
   {
     delete this->left;
-    delete this->right;
+
+    if( this->right )
+      delete this->right;
   }
 };
 

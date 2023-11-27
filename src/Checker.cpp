@@ -15,9 +15,14 @@ void Checker::check(AST::Base* ast) {
     return;
 
   switch( ast->kind ) {
-    case ASTKind::Value:
-      ast->as<AST::Value>()->object->noDelete = true;
+    case ASTKind::Value: {
+      auto val = ast->as<AST::Value>();
+      
+      alertmsg(val << ": " << val->object->to_string());
+      val->object->noDelete = true;
+
       break;
+    }
 
     case ASTKind::Variable:
       break;
@@ -53,6 +58,16 @@ void Checker::check(AST::Base* ast) {
       for( auto&& x : ast->as<AST::Scope>()->list ) {
         this->check(x);
       }
+
+      break;
+    }
+
+    case ASTKind::If: {
+      auto x = ast->as<AST::If>();
+
+      this->check(x->cond);
+      this->check(x->case_true);
+      this->check(x->case_false);
 
       break;
     }

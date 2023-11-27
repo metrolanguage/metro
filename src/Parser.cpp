@@ -367,7 +367,30 @@ AST::Base* Parser::stmt() {
    * return
    */
   if( this->eat("return") ) {
+    auto x = new AST::Expr(ASTKind::Return, this->ate, nullptr, nullptr);
 
+    if( !this->eat(";") ) {
+      x->left = this->expr();
+      this->expect(";");
+    }
+
+    return x;
+  }
+
+  /*
+   * break
+   */
+  if( this->eat("break") ) {
+    this->expect(";");
+    return new AST::Expr(ASTKind::Break, this->ate, nullptr, nullptr);
+  }
+
+  /*
+   * continue
+   */
+  if( this->eat("continue") ) {
+    this->expect(";");
+    return new AST::Expr(ASTKind::Continue, this->ate, nullptr, nullptr);
   }
 
   auto x = this->expr();

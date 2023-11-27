@@ -28,9 +28,6 @@ Metro::~Metro()
 }
 
 int Metro::main() {
-  
-  auto nnn = new int[10];
-  nnn[0]++;
 
   GC::enable();
 
