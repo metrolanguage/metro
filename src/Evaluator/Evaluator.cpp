@@ -62,6 +62,9 @@ Object* Evaluator::eval(AST::Base* ast) {
       return obj;
     }
 
+    //
+    // call function
+    //
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
 
@@ -91,12 +94,18 @@ Object* Evaluator::eval(AST::Base* ast) {
       return result;
     }
 
+    //
+    // index ref
+    //
     case ASTKind::IndexRef: {
       auto x = ast->as<AST::Expr>();
 
       return this->evalIndexRef(x, this->eval(x->left), this->eval(x->right));
     }
 
+    //
+    // member access
+    //
     case ASTKind::MemberAccess: {
       auto x = ast->as<AST::Expr>();
 
@@ -128,6 +137,9 @@ Object* Evaluator::eval(AST::Base* ast) {
         .exit();
     }
 
+    //
+    // not
+    //
     case ASTKind::Not: {
       auto x = ast->as<AST::Expr>();
 
@@ -144,12 +156,18 @@ Object* Evaluator::eval(AST::Base* ast) {
       return obj;
     }
 
+    //
+    // equal
+    //
     case ASTKind::Equal: {
       auto x = ast->as<AST::Expr>();
 
       return new Bool(this->eval(x->left)->equals(this->eval(x->right)));
     }
 
+    //
+    // logical
+    //
     case ASTKind::LogAND:
     case ASTKind::LogOR: {
       auto x = ast->as<AST::Expr>();
@@ -177,6 +195,9 @@ Object* Evaluator::eval(AST::Base* ast) {
       return new Bool(lhs->as<Bool>()->value || rhs->as<Bool>()->value);
     }
 
+    //
+    // range
+    //
     case ASTKind::Range: {
       auto x = ast->as<AST::Expr>();
 
@@ -198,6 +219,9 @@ Object* Evaluator::eval(AST::Base* ast) {
       return new Range(begin->as<Int>()->value, end->as<Int>()->value);
     }
 
+    //
+    // assign
+    //
     case ASTKind::Assignment: {
       auto assign = ast->as<AST::Expr>();
 
@@ -216,6 +240,9 @@ Object* Evaluator::eval(AST::Base* ast) {
       return this->evalAsLeft(assign->left) = value;
     }
 
+    //
+    // Statements
+    //
     case ASTKind::Scope:
     case ASTKind::If:
     case ASTKind::Switch:

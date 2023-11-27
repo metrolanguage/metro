@@ -7,11 +7,13 @@ namespace metro {
 
 Parser::Parser(Token* token)
   : token(token),
-    ate(nullptr),
-    loopCounterDepth(0)
+    ate(nullptr)
 {
 }
 
+/*
+ * parser
+ */
 AST::Base* Parser::parse() {
   auto ast = new AST::Scope(nullptr);
 
@@ -44,12 +46,19 @@ AST::Base* Parser::parse() {
   return ast;
 }
 
+/*
+ * factor
+ */
 AST::Base* Parser::factor() {
   auto tok = this->token;
 
+  //
+  // brackets
   if( this->eat("(") ) {
     auto x = this->expr();
 
+    //
+    // tuple
     if( this->eat(",") ) {
       auto tuple = new AST::Array(tok, { x });
 
@@ -64,6 +73,8 @@ AST::Base* Parser::factor() {
     return x;
   }
 
+  //
+  // array
   if( this->eat("[") ) {
     auto ast = new AST::Array(tok);
 
@@ -78,6 +89,8 @@ AST::Base* Parser::factor() {
     return ast;
   }
 
+  //
+  // immediate
   switch( tok->kind ) {
     case TokenKind::Int:
       this->next();
@@ -122,6 +135,9 @@ AST::Base* Parser::factor() {
     .exit();
 }
 
+/*
+ * indexref
+ */
 AST::Base* Parser::indexref() {
   auto x = this->factor();
 
@@ -152,12 +168,13 @@ AST::Base* Parser::indexref() {
   return x;
 }
 
+/*
+ * unary
+ */
 AST::Base* Parser::unary() {
-
-  if( this->eat("-") ) {
+  if( this->eat("-") )
     return new AST::Expr(ASTKind::Sub, this->ate,
       new AST::Value(nullptr, new objects::Int(0)), this->indexref());
-  }
 
   if( this->eat("!") )
     return new AST::Expr(ASTKind::Not, this->ate, this->indexref(), nullptr);
@@ -165,6 +182,9 @@ AST::Base* Parser::unary() {
   return this->indexref();
 }
 
+/*
+ * mul
+ */
 AST::Base* Parser::mul() {
   auto x = this->unary();
 
@@ -182,6 +202,9 @@ AST::Base* Parser::mul() {
   return x;
 }
 
+/*
+ * add
+ */
 AST::Base* Parser::add() {
   auto x = this->mul();
 
@@ -197,6 +220,9 @@ AST::Base* Parser::add() {
   return x;
 }
 
+/*
+ * shift
+ */
 AST::Base* Parser::shift() {
   auto x = this->add();
 
@@ -212,16 +238,21 @@ AST::Base* Parser::shift() {
   return x;
 }
 
+/*
+ * range
+ */
 AST::Base* Parser::range() {
   auto x = this->shift();
 
-  if( this->eat("..") ) {
+  if( this->eat("..") )
     return new AST::Expr(ASTKind::Range, this->ate, x, this->shift());
-  }
 
   return x;
 }
 
+/*
+ * compare
+ */
 AST::Base* Parser::compare() {
   auto x = this->range();
 
@@ -241,6 +272,9 @@ AST::Base* Parser::compare() {
   return x;
 }
 
+/*
+ * equality
+ */
 AST::Base* Parser::equality() {
   auto x = this->compare();
 
@@ -257,6 +291,9 @@ AST::Base* Parser::equality() {
   return x;
 }
 
+/*
+ * bitAND
+ */
 AST::Base* Parser::bitAND() {
   auto x = this->equality();
 
@@ -266,6 +303,9 @@ AST::Base* Parser::bitAND() {
   return x;
 }
 
+/*
+ * bitOR
+ */
 AST::Base* Parser::bitOR() {
   auto x = this->bitAND();
 
@@ -275,6 +315,9 @@ AST::Base* Parser::bitOR() {
   return x;
 }
 
+/*
+ * bitXOR
+ */
 AST::Base* Parser::bitXOR() {
   auto x = this->bitOR();
 
@@ -284,6 +327,9 @@ AST::Base* Parser::bitXOR() {
   return x;
 }
 
+/*
+ * logAND
+ */
 AST::Base* Parser::logAND() {
   auto x = this->bitXOR();
 
@@ -293,6 +339,9 @@ AST::Base* Parser::logAND() {
   return x;
 }
 
+/*
+ * logOR
+ */
 AST::Base* Parser::logOR() {
   auto x = this->logAND();
 
@@ -302,6 +351,9 @@ AST::Base* Parser::logOR() {
   return x;
 }
 
+/*
+ * assign
+ */
 AST::Base* Parser::assign() {
   auto x = this->logOR();
 
@@ -311,16 +363,24 @@ AST::Base* Parser::assign() {
   return x;
 }
 
+/*
+ * expr
+ */
 AST::Base* Parser::expr() {
   return this->assign();
 }
 
+/*
+ * stmt
+ */
 AST::Base* Parser::stmt() {
 
   if( this->token->str == "{" ) {
     return this->expectScope();
   }
 
+  //
+  // if
   if( this->eat("if") ) {
     auto ast = new AST::If(this->ate);
 
@@ -334,9 +394,8 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
-  /*
-   * while
-   */
+  //
+  // while
   if( this->eat("while") ) {
     auto ast = new AST::While(this->ate);
 
@@ -346,9 +405,8 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
-  /*
-   * for
-   */
+  //
+  // for
   if( this->eat("for") ) {
     auto ast = new AST::For(this->ate);
 
@@ -363,9 +421,8 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
-  /*
-   * return
-   */
+  //
+  // return
   if( this->eat("return") ) {
     auto x = new AST::Expr(ASTKind::Return, this->ate, nullptr, nullptr);
 
@@ -377,17 +434,15 @@ AST::Base* Parser::stmt() {
     return x;
   }
 
-  /*
-   * break
-   */
+  //
+  // break
   if( this->eat("break") ) {
     this->expect(";");
     return new AST::Expr(ASTKind::Break, this->ate, nullptr, nullptr);
   }
 
-  /*
-   * continue
-   */
+  //
+  // continue
   if( this->eat("continue") ) {
     this->expect(";");
     return new AST::Expr(ASTKind::Continue, this->ate, nullptr, nullptr);
@@ -412,7 +467,7 @@ bool Parser::eat(std::string_view s) {
     this->next();
     return true;
   }
-  
+
   return false;
 }
 

@@ -5,9 +5,7 @@
 namespace metro {
 
 class Parser {
-
 public:
-
   Parser(Token* token);
 
   AST::Base* parse();
@@ -31,7 +29,6 @@ public:
   AST::Base* stmt();
 
 private:
-
   bool check();
   Token* next();
   
@@ -44,12 +41,8 @@ private:
   AST::Variable* newVariable(std::string const& name);
   AST::Expr* newAssign(AST::Base* dest, AST::Base* src);
 
-
-
   Token* token;
   Token* ate;
-
-  size_t loopCounterDepth;
 };
 
 } // namespace metro

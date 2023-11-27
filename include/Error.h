@@ -6,7 +6,6 @@
 namespace metro {
 
 class Error {
-
   struct ErrorLocation {
     enum Kind {
       LC_Position,

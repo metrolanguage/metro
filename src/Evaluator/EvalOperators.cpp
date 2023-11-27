@@ -16,6 +16,9 @@ using namespace objects;
 
 namespace {
 
+/*
+ * obj_add
+ */
 Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -76,6 +79,9 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_sub
+ */
 Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
   
@@ -122,6 +128,9 @@ Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_mul
+ */
 Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -228,6 +237,9 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_div
+ */
 Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -319,6 +331,9 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_mod
+ */
 Object* obj_mod(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -374,6 +389,9 @@ Object* obj_mod(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_lshift
+ */
 Object* obj_lshift(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -406,6 +424,9 @@ Object* obj_lshift(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_rshift
+ */
 Object* obj_rshift(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
   
@@ -438,6 +459,9 @@ Object* obj_rshift(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_bigger
+ */
 Object* obj_bigger(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -494,6 +518,9 @@ Object* obj_bigger(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_bigger_or_equal
+ */
 Object* obj_bigger_or_equal(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -550,6 +577,9 @@ Object* obj_bigger_or_equal(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_bit_and
+ */
 Object* obj_bit_and(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -582,6 +612,9 @@ Object* obj_bit_and(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_bit_xor
+ */
 Object* obj_bit_xor(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
@@ -614,6 +647,9 @@ Object* obj_bit_xor(AST::Expr* expr, Object* lhs, Object* rhs) {
   return nullptr;
 }
 
+/*
+ * obj_bit_or
+ */
 Object* obj_bit_or(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
   

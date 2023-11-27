@@ -107,7 +107,6 @@ private:
   ScopeEvaluationFlags* _loopScope;
   ScopeEvaluationFlags* _funcScope;
   ScopeEvaluationFlags* _scope;
-
 };
 
 } // namespace metro

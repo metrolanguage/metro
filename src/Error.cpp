@@ -19,7 +19,6 @@ Error& Error::setMessage(std::string const& msg) {
 }
 
 Error& Error::emit() {
-
   auto script = Metro::getInstance()->getRunningScript();
   auto const& source = script->source;
 
@@ -53,7 +52,7 @@ Error& Error::emit() {
 
     case ErrorLocation::LC_AST: {
       alert;
-      
+
       auto ast = (AST::Base*)this->location.loc;
 
       beginPos = ast->token->position;
@@ -62,12 +61,6 @@ Error& Error::emit() {
       break;
     }
   }
-  
-  alertmsg(this->location.kind);
-  alertmsg(beginPos);
-  alertmsg(endPos);
-  alertmsg(trimBegin);
-  alertmsg(trimEnd);
 
   for( size_t i = 0; i < beginPos; i++ ) {
     if( source.data[i] == '\n' ) {

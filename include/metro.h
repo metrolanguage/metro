@@ -46,7 +46,6 @@ public:
   [[noreturn]]
   void fatalError(std::string const& msg);
 
-
   static Metro* getInstance();
 
 private:

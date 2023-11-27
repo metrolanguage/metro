@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <codecvt>
-#include <limits>
 #include <locale>
 #include "Type.h"
 #include "Utils.h"

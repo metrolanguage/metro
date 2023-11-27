@@ -207,6 +207,4 @@ void Evaluator::evalStatements(AST::Base* ast) {
   _end:;
 }
 
-
-
 } // namespace metro
