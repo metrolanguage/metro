@@ -40,7 +40,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       if( !pvar )
         Error(ast)
-          .setMessage("undefined variable")
+          .setMessage("variable '" + std::string(ast->token->str) +"' is not defined")
           .emit()
           .exit();
 
@@ -61,7 +61,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       for( auto&& e : ast->as<AST::Array>()->elements )
         obj->elements.emplace_back(this->eval(e));
-      
+
       return obj;
     }
 
@@ -204,10 +204,8 @@ Object* Evaluator::eval(AST::Base* ast) {
         auto& storage = this->getCurrentStorage();
         auto name = assign->left->as<AST::Variable>()->getName();
 
-        if( !storage.contains(name) ) {
-          GC::bind(storage[name] = value);
-          return value;
-        }
+        if( !storage.contains(name) )
+          GC::bind(value);
         else
           GC::unbind(storage[name]);
       }
@@ -302,6 +300,7 @@ void Evaluator::evalStatements(AST::Base* ast) {
   _eval_switch: {
     auto sw = ast->as<AST::Switch>();
 
+    (void)sw;
 
     goto _end;
   }
