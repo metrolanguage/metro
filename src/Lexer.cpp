@@ -15,6 +15,8 @@ static char const* punctuaters[] {
   "==",
   "!=",
   "..",
+  "&&",
+  "||",
   "<",
   ">",
   "+",
