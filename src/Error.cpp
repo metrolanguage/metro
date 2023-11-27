@@ -18,7 +18,14 @@ Error& Error::setMessage(std::string const& msg) {
 }
 
 Error& Error::emit() {
-  std::cout << "error: " << this->message << std::endl;
+
+
+  switch( this->location.kind ) {
+    case ErrorLocation::LC_Position: {
+      
+    }
+  }
+
 
   Metro::emittedErrors.emplace_back(*this);
 

@@ -29,7 +29,7 @@ Metro::~Metro()
 
 int Metro::main() {
 
-  GC::enable();
+  GC::initialize();
 
   SourceLoc source{ "test.metro" };
 

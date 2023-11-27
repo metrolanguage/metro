@@ -14,18 +14,33 @@ class Error {
       LC_AST,
     };
 
+    Kind kind;
+    void* loc;
+
     size_t as_position() const { return (size_t)this->loc; }
     Token* as_token() const { return (Token*)this->loc; }
     AST::Base* as_ast() const { return (AST::Base*)this->loc; }
 
-    ErrorLocation(size_t pos)       : loc((void*)pos) { }
-    ErrorLocation(Token* token)     : loc((void*)token) { }
-    ErrorLocation(AST::Base* ast)   : loc((void*)ast) { }
+    ErrorLocation(size_t pos)
+      : kind(LC_Position),
+        loc((void*)pos)
+    {
+    }
+
+    ErrorLocation(Token* token)
+      : kind(LC_Token),
+        loc((void*)token)
+    {
+    }
+
+    ErrorLocation(AST::Base* ast)
+      : kind(LC_AST),
+        loc((void*)ast)
+    {
+    }
 
   private:
     ErrorLocation() { }
-
-    void* loc;
   };
 
 public:

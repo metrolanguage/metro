@@ -44,7 +44,7 @@ Object* Evaluator::eval(AST::Base* ast) {
           .emit()
           .exit();
 
-      return pvar;
+      return pvar->clone();
     }
 
     case ASTKind::Array: {
@@ -73,28 +73,25 @@ Object* Evaluator::eval(AST::Base* ast) {
       for( auto&& arg : cf->arguments )
         args.emplace_back(this->eval(arg));
 
-      if( cf->userdef ) {
-        auto& stack = this->push_stack(cf->userdef);
+      if( cf->builtin )
+        return cf->builtin->call(std::move(args));
 
-        for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
-          GC::unbind(stack.storage[arg->str] = *it++);
-        }
+      auto& stack = this->push_stack(cf->userdef);
 
-        auto _save = this->_funcScope;
-
-        this->eval(cf->userdef->scope);
-
-        auto result = stack.result;
-
-        this->pop_stack();
-
-        if( !result )
-          return None::getNone();
-
-        return result;
+      for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
+        GC::bind(stack.storage[arg->str] = *it++);
       }
 
-      return cf->builtin->call(std::move(args));
+      this->eval(cf->userdef->scope);
+
+      auto result = stack.result;
+
+      this->pop_stack();
+
+      if( !result )
+        return None::getNone();
+
+      return result;
     }
 
     case ASTKind::IndexRef: {
@@ -302,8 +299,12 @@ void Evaluator::evalStatements(AST::Base* ast) {
     goto _end;
   }
 
-  _eval_switch:
-    todo_impl;
+  _eval_switch: {
+    auto sw = ast->as<AST::Switch>();
+
+
+    goto _end;
+  }
   
   _eval_return: {
     if( !this->inFunction() ) {
@@ -406,7 +407,13 @@ void Evaluator::evalStatements(AST::Base* ast) {
       }
 
       case Type::Range: {
-        todo_impl;
+        auto range = content->as<Range>();
+
+        for( iter = new Int(range->begin); iter->as<Int>()->value < range->end; iter->as<Int>()->value++ ) {
+          this->eval(x->code);
+        }
+
+        break;
       }
     }
 
@@ -481,6 +488,10 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
 
   auto lhs = this->eval(expr->left);
   auto rhs = this->eval(expr->right);
+  auto ret = lhs;
+
+  GC::bind(lhs);
+  GC::bind(rhs);
 
   if( static_cast<size_t>(expr->kind) >= std::size(operator_labels) )
     todo_impl;
@@ -723,12 +734,12 @@ op_mul:
         // string * int
         case Type::Int:
           rhs = new USize(rhs->as<Int>()->value);
-        
+
         // string * usize
         case Type::USize:
           std::swap(lhs, rhs);
           goto in_op_mul_usize_string;
-        
+
         default:
           goto invalidOperator;
       }
@@ -805,7 +816,7 @@ op_div:
         case Type::Int:
           std::swap(lhs, rhs);
           goto in_op_div_int_float;
-        
+
         // float / float
         case Type::Float:
           if( rhs->as<Float>()->value == 0 )
@@ -845,7 +856,7 @@ op_div:
         case Type::Float:
           std::swap(lhs, rhs);
           goto in_op_div_float_usize;
-        
+
         // usize / usize
         case Type::USize:
           if( rhs->as<USize>()->value == 0 )
@@ -1025,17 +1036,17 @@ op_bigger:
       switch( rhs->type.kind ) {
         // int > int
         case Type::Int:
-          lhs = new Bool(lhs->as<Int>()->value > rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<Int>()->value > rhs->as<Int>()->value);
           break;
 
         // int > float
         case Type::Float:
-          lhs = new Bool(lhs->as<Int>()->value > (Int::ValueType)rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<Int>()->value > (Int::ValueType)rhs->as<Float>()->value);
           break;
 
         // int > usize
         case Type::USize:
-          lhs = new Bool(lhs->as<Int>()->value > (Int::ValueType)rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<Int>()->value > (Int::ValueType)rhs->as<USize>()->value);
           break;
           
         default:
@@ -1047,17 +1058,17 @@ op_bigger:
       switch( rhs->type.kind ) {
         // float > int
         case Type::Int:
-          lhs = new Bool(lhs->as<Float>()->value > rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<Float>()->value > rhs->as<Int>()->value);
           break;
 
         // float > float
         case Type::Float:
-          lhs = new Bool(lhs->as<Float>()->value > (Int::ValueType)rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<Float>()->value > (Float::ValueType)rhs->as<Float>()->value);
           break;
 
         // float > usize
         case Type::USize:
-          lhs = new Bool(lhs->as<Float>()->value > (Int::ValueType)rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<Float>()->value > (Float::ValueType)rhs->as<USize>()->value);
           break;
           
         default:
@@ -1069,17 +1080,17 @@ op_bigger:
       switch( rhs->type.kind ) {
         // usize > int
         case Type::Int:
-          lhs = new Bool(lhs->as<USize>()->value > (unsigned)rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<USize>()->value > (unsigned)rhs->as<Int>()->value);
           break;
 
         // usize > float
         case Type::Float:
-          lhs = new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<Float>()->value);
           break;
 
         // usize > usize
         case Type::USize:
-          lhs = new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<USize>()->value);
           break;
 
         default:
@@ -1098,17 +1109,17 @@ op_bigger_or_equal:
       switch( rhs->type.kind ) {
         // int >= int
         case Type::Int:
-          lhs = new Bool(lhs->as<Int>()->value >= rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<Int>()->value >= rhs->as<Int>()->value);
           break;
 
         // int >= float
         case Type::Float:
-          lhs = new Bool(lhs->as<Int>()->value >= (Int::ValueType)rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<Int>()->value >= (Int::ValueType)rhs->as<Float>()->value);
           break;
 
         // int >= usize
         case Type::USize:
-          lhs = new Bool(lhs->as<Int>()->value >= (Int::ValueType)rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<Int>()->value >= (Int::ValueType)rhs->as<USize>()->value);
           break;
           
         default:
@@ -1120,17 +1131,17 @@ op_bigger_or_equal:
       switch( rhs->type.kind ) {
         // float >= int
         case Type::Int:
-          lhs = new Bool(lhs->as<Float>()->value >= rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<Float>()->value >= rhs->as<Int>()->value);
           break;
 
         // float >= float
         case Type::Float:
-          lhs = new Bool(lhs->as<Float>()->value >= (Int::ValueType)rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<Float>()->value >= (Float::ValueType)rhs->as<Float>()->value);
           break;
 
         // float >= usize
         case Type::USize:
-          lhs = new Bool(lhs->as<Float>()->value >= (Int::ValueType)rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<Float>()->value >= (Float::ValueType)rhs->as<USize>()->value);
           break;
           
         default:
@@ -1142,17 +1153,17 @@ op_bigger_or_equal:
       switch( rhs->type.kind ) {
         // usize >= int
         case Type::Int:
-          lhs = new Bool(lhs->as<USize>()->value >= (unsigned)rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<USize>()->value >= (unsigned)rhs->as<Int>()->value);
           break;
 
         // usize >= float
         case Type::Float:
-          lhs = new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<Float>()->value);
           break;
 
         // usize >= usize
         case Type::USize:
-          lhs = new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<USize>()->value);
           break;
 
         default:
@@ -1171,19 +1182,19 @@ op_equal:
       switch( rhs->type.kind ) {
         // int == int
         case Type::Int:
-          lhs = new Bool(lhs->as<Int>()->value == rhs->as<Int>()->value);
+          ret = new Bool(lhs->as<Int>()->value == rhs->as<Int>()->value);
           break;
 
         // int == float
         case Type::Float:
           in_op_equal_int_float:
-          lhs = new Bool(lhs->as<Int>()->value == rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<Int>()->value == rhs->as<Float>()->value);
           break;
 
         // int == usize
         case Type::USize:
           in_op_equal_int_usize:
-          lhs = new Bool((unsigned)lhs->as<Int>()->value == rhs->as<USize>()->value);
+          ret = new Bool((unsigned)lhs->as<Int>()->value == rhs->as<USize>()->value);
           break;
 
         default:
@@ -1200,13 +1211,13 @@ op_equal:
         
         // float == float
         case Type::Float:
-          lhs = new Bool(lhs->as<Float>()->value == rhs->as<Float>()->value);
+          ret = new Bool(lhs->as<Float>()->value == rhs->as<Float>()->value);
           break;
 
         // float == usize
         case Type::USize:
         in_op_equal_float_usize:
-          lhs = new Bool(lhs->as<Float>()->value == rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<Float>()->value == rhs->as<USize>()->value);
           break;
 
         default:
@@ -1228,7 +1239,7 @@ op_equal:
         
         // usize == usize
         case Type::USize:
-          lhs = new Bool(lhs->as<USize>()->value == rhs->as<USize>()->value);
+          ret = new Bool(lhs->as<USize>()->value == rhs->as<USize>()->value);
           break;
 
         default:
@@ -1365,7 +1376,10 @@ op_bit_or:
   goto end_label;
 
 end_label:
-  return lhs;
+  GC::unbind(lhs);
+  GC::unbind(rhs);
+
+  return ret;
 }
 
 //
@@ -1383,10 +1397,10 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
     case Type::USize:
       index = objIndex->as<USize>()->value;
       break;
-    
+
     default:
       Error(ast->right)
-        .setMessage("expected 'usize' object")
+        .setMessage("expected 'int' or 'usize' object")
         .emit()
         .exit();
   }

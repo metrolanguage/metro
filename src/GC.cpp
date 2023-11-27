@@ -124,7 +124,7 @@ void _CollectThreadFunc() {
       continue;
     }
     else {
-      it++;
+      (*it++)->isMarked = false;
     }
   }
 
@@ -157,7 +157,7 @@ void _Collect() {
 
 } // unonymous
 
-void enable() {
+void initialize() {
   _isEnabled = true;
 
   _Memory.reserve(OBJECT_MEMORY_MAXIMUM);

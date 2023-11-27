@@ -2,14 +2,34 @@
 
 #include <string>
 #include <vector>
+#include "SourceLoc.h"
 
 namespace metro {
 
-// Metro driver.
+struct Token;
+
+namespace AST {
+  struct Base;
+}
+
+namespace objects {
+  struct Object;
+}
+
+/*
+ * Metro driver.
+ */
 
 class Error;
 class Metro {
 public:
+  struct ScriptInfo {
+    SourceLoc  source;
+    
+    Token*            token;
+    AST::Base*        ast;
+    objects::Object*  result;
+  };
 
   Metro(int argc, char** argv);
   ~Metro();
@@ -23,11 +43,15 @@ public:
   void fatalError(std::string const& msg);
 
 
+  void evaluateScript(ScriptInfo& script);
+
+
   static Metro* getInstance();
 
 private:
 
   std::vector<std::string> args;
+  std::vector<ScriptInfo> scripts;
 
   static std::vector<Error> emittedErrors; /* in Error.cpp */
 

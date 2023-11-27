@@ -6,7 +6,14 @@ namespace metro::GC {
 
 using namespace objects;
 
-void enable();
+/*
+ * Initialize and enable GC
+ */
+void initialize();
+
+/*
+ * check if GC enabled
+ */
 bool isEnabled();
 
 void bind(Object*);
