@@ -91,11 +91,6 @@ void _Mark(Object* object) {
   }
 }
 
-void _Unmark() {
-  for( auto&& p : _MemorySub )
-    if( p ) p->isMarked = false;
-}
-
 void _MarkAll() {
   mark_count = 0;
 

@@ -230,11 +230,11 @@ struct Dict : Object {
   }
 
   bool equals(Dict* dict) const {
-    if( !this->elements.size() != dict->elements.size() )
+    if( this->elements.size() != dict->elements.size() )
       return false;
 
     for( auto it = dict->elements.begin(); auto&& [k, v] : this->elements ) {
-      auto&& [k2, v2] = *it;
+      auto&& [k2, v2] = *it++;
 
       if( !k->equals(k2) || !v->equals(v2) )
         return false;

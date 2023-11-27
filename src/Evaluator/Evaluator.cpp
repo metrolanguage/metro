@@ -144,6 +144,12 @@ Object* Evaluator::eval(AST::Base* ast) {
       return obj;
     }
 
+    case ASTKind::Equal: {
+      auto x = ast->as<AST::Expr>();
+
+      return new Bool(this->eval(x->left)->equals(this->eval(x->right)));
+    }
+
     case ASTKind::LogAND:
     case ASTKind::LogOR: {
       auto x = ast->as<AST::Expr>();

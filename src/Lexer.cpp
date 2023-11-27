@@ -132,6 +132,10 @@ Token* Lexer::lex() {
     this->pass_space();
   }
 
+  for( auto p = top.next; p; p = p->next ) {
+    p->source = &this->loc;
+  }
+
   cur = new Token(TokenKind::End, cur, "", this->position);
 
   auto ret = top.next;

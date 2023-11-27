@@ -42,43 +42,27 @@ Object::~Object()
 }
 
 bool Object::equals(Object* object) const {
+#define __CASE__(T) \
+  case Type::T: return this->as<T>()->equals(object->as<T>());
+
   if( !this->type.equals(object->type) )
     return false;
   
   switch( this->type.kind ) {
-    case Type::Int:
-      return this->as<Int>()->equals(object->as<Int>());
-      
-    case Type::Float:
-      return this->as<Float>()->equals(object->as<Float>());
-      
-    case Type::USize:
-      return this->as<USize>()->equals(object->as<USize>());
-      
-    case Type::Bool:
-      return this->as<Bool>()->equals(object->as<Bool>());
-      
-    case Type::Char:
-      return this->as<Char>()->equals(object->as<Char>());
-
-    case Type::String:
-      return this->as<String>()->equals(object->as<String>());
-
-    case Type::Vector:
-      return this->as<Vector>()->equals(object->as<Vector>());
-
-    case Type::Dict:
-      return this->as<Dict>()->equals(object->as<Dict>());
-
-    case Type::Tuple:
-      return this->as<Tuple>()->equals(object->as<Tuple>());
-
-    case Type::Range:
-      return this->as<Range>()->equals(object->as<Range>());
+    __CASE__(Int)
+    __CASE__(Float)
+    __CASE__(USize)
+    __CASE__(Bool)
+    __CASE__(Char)
+    __CASE__(String)
+    __CASE__(Vector)
+    __CASE__(Dict)
+    __CASE__(Tuple)
+    __CASE__(Range)
   }
 
   assert(this->type.equals(Type::None));
-  
+
   return true;
 }
 
@@ -93,6 +77,17 @@ std::string _Primitive<std::u16string, Type::String>::to_string() const {
 
 String* _Primitive<std::u16string, Type::String>::clone() const {
   return new String(this->value);
+}
+
+bool String::equals(String* str) const {
+  if( this->value.size() != str->value.size() )
+    return false;
+
+  for( auto it = this->value.begin(); auto&& c : str->value )
+    if( !(*it++)->equals(c) )
+      return false;
+
+  return true;
 }
 
 _Primitive<std::u16string, Type::String>::_Primitive(std::u16string const& str)

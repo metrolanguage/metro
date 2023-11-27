@@ -17,6 +17,8 @@ using namespace objects;
 namespace {
 
 Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     //
     // left is Int
@@ -75,6 +77,8 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+  
   switch( lhs->type.kind ) {
     // left is Int
     case Type::Int: {
@@ -119,6 +123,8 @@ Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -223,6 +229,8 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -312,6 +320,8 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_mod(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -365,6 +375,8 @@ Object* obj_mod(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_lshift(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -395,6 +407,8 @@ Object* obj_lshift(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_rshift(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+  
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -425,6 +439,8 @@ Object* obj_rshift(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_bigger(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -479,6 +495,8 @@ Object* obj_bigger(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_bigger_or_equal(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+
   switch( lhs->type.kind ) {
     case Type::Int:
       switch( rhs->type.kind ) {
@@ -533,15 +551,99 @@ Object* obj_bigger_or_equal(AST::Expr* expr, Object* lhs, Object* rhs) {
 }
 
 Object* obj_bit_and(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
 
+  switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int & int
+        case Type::Int:
+          return new Int(lhs->as<Int>()->value & rhs->as<Int>()->value);
+        
+        // int & usize
+        case Type::USize:
+          return new Int(lhs->as<Int>()->value & rhs->as<USize>()->value);
+      }
+      break;
+
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize & int
+        case Type::Int:
+          return new USize(lhs->as<USize>()->value & rhs->as<Int>()->value);
+        
+        // usize & usize
+        case Type::USize:
+          return new USize(lhs->as<USize>()->value & rhs->as<USize>()->value);
+      }
+      break;
+  }
+
+  return nullptr;
 }
 
 Object* obj_bit_xor(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
 
+  switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int & int
+        case Type::Int:
+          return new Int(lhs->as<Int>()->value ^ rhs->as<Int>()->value);
+        
+        // int ^ usize
+        case Type::USize:
+          return new Int(lhs->as<Int>()->value ^ rhs->as<USize>()->value);
+      }
+      break;
+
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize ^ int
+        case Type::Int:
+          return new USize(lhs->as<USize>()->value ^ rhs->as<Int>()->value);
+        
+        // usize ^ usize
+        case Type::USize:
+          return new USize(lhs->as<USize>()->value ^ rhs->as<USize>()->value);
+      }
+      break;
+  }
+
+  return nullptr;
 }
 
 Object* obj_bit_or(AST::Expr* expr, Object* lhs, Object* rhs) {
+  (void)expr;
+  
+  switch( lhs->type.kind ) {
+    case Type::Int:
+      switch( rhs->type.kind ) {
+        // int | int
+        case Type::Int:
+          return new Int(lhs->as<Int>()->value | rhs->as<Int>()->value);
+        
+        // int | usize
+        case Type::USize:
+          return new Int(lhs->as<Int>()->value | rhs->as<USize>()->value);
+      }
+      break;
 
+    case Type::USize:
+      switch( rhs->type.kind ) {
+        // usize | int
+        case Type::Int:
+          return new USize(lhs->as<USize>()->value | rhs->as<Int>()->value);
+        
+        // usize | usize
+        case Type::USize:
+          return new USize(lhs->as<USize>()->value | rhs->as<USize>()->value);
+      }
+      break;
+  }
+
+  return nullptr;
 }
 
 } // anonymous namespace
@@ -587,6 +689,9 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   auto result =
     operator_labels[static_cast<int>(expr->kind)](expr, lhs, rhs);
 
+  GC::unbind(lhs);
+  GC::unbind(rhs);
+
   if( !result ) {
     Error(expr->token)
       .setMessage(
@@ -597,135 +702,6 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   }
 
   return result;
-
-op_bit_and:
-  switch( lhs->type.kind ) {
-    case Type::Int:
-      switch( rhs->type.kind ) {
-        // int & int
-        case Type::Int:
-          lhs->as<Int>()->value &= rhs->as<Int>()->value;
-          break;
-        
-        // int & usize
-        case Type::USize:
-          lhs->as<Int>()->value &= rhs->as<USize>()->value;
-          break;
-
-        default:
-          goto invalidOperator;
-      }
-      break;
-
-    case Type::USize:
-      switch( rhs->type.kind ) {
-        // usize & int
-        case Type::Int:
-          lhs->as<USize>()->value &= rhs->as<Int>()->value;
-          break;
-        
-        // usize & usize
-        case Type::USize:
-          lhs->as<USize>()->value &= rhs->as<USize>()->value;
-          break;
-
-        default:
-          goto invalidOperator;
-      }
-      break;
-
-    default:
-      goto invalidOperator;
-  }
-  goto end_label;
-
-op_bit_xor:
-  switch( lhs->type.kind ) {
-    case Type::Int:
-      switch( rhs->type.kind ) {
-        // int ^ int
-        case Type::Int:
-          lhs->as<Int>()->value ^= rhs->as<Int>()->value;
-          break;
-        
-        // int ^ usize
-        case Type::USize:
-          lhs->as<Int>()->value ^= rhs->as<USize>()->value;
-          break;
-
-        default:
-          goto invalidOperator;
-      }
-      break;
-
-    case Type::USize:
-      switch( rhs->type.kind ) {
-        // usize ^ int
-        case Type::Int:
-          lhs->as<USize>()->value ^= rhs->as<Int>()->value;
-          break;
-        
-        // usize ^ usize
-        case Type::USize:
-          lhs->as<USize>()->value ^= rhs->as<USize>()->value;
-          break;
-
-        default:
-          goto invalidOperator;
-      }
-      break;
-
-    default:
-      goto invalidOperator;
-  }
-  goto end_label;
-
-op_bit_or:
-  switch( lhs->type.kind ) {
-    case Type::Int:
-      switch( rhs->type.kind ) {
-        // int | int
-        case Type::Int:
-          lhs->as<Int>()->value |= rhs->as<Int>()->value;
-          break;
-        
-        // int | usize
-        case Type::USize:
-          lhs->as<Int>()->value |= rhs->as<USize>()->value;
-          break;
-
-        default:
-          goto invalidOperator;
-      }
-      break;
-
-    case Type::USize:
-      switch( rhs->type.kind ) {
-        // usize | int
-        case Type::Int:
-          lhs->as<USize>()->value |= rhs->as<Int>()->value;
-          break;
-        
-        // usize | usize
-        case Type::USize:
-          lhs->as<USize>()->value |= rhs->as<USize>()->value;
-          break;
-
-        default:
-          goto invalidOperator;
-      }
-      break;
-
-    default:
-      goto invalidOperator;
-  }
-  goto end_label;
-
-end_label:
-  GC::unbind(lhs);
-  GC::unbind(rhs);
-
-  return ret;
 }
 
 } // namespace metro

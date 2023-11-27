@@ -35,7 +35,7 @@ struct Token {
   Token* next;
   std::string_view str;
   size_t position;
-  SourceLoc* source;
+  SourceLoc const* source;
 
   size_t getEndPos() const;
 
