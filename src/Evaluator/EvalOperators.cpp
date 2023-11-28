@@ -67,12 +67,24 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
 
     case Type::String:
       switch( rhs->type.kind ) {
+        // string + char
         case Type::Char:
           return lhs->as<String>()->clone()->append(rhs->as<Char>());
 
+        // string + string
         case Type::String:
           return lhs->as<String>()->clone()->append(rhs->as<String>());
       }
+      break;
+
+    case Type::Char:
+      switch( rhs->type.kind ) {
+        case Type::String: {
+          rhs->as<String>()->value.insert(rhs->as<String>()->value.begin(), lhs->as<Char>()->clone());
+          return rhs;
+        }
+      }
+
       break;
   }
 
