@@ -32,7 +32,11 @@ Object* Evaluator::eval(AST::Base* ast) {
     }
 
     case ASTKind::Variable: {
-      auto pvar = this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+      auto var = ast->as<AST::Variable>();
+      auto pvar = this->getCurrentStorage()[var->getName()];
+
+      if( this->inFunction() && !pvar )
+        pvar = this->globalStorage[var->getName()];
 
       if( !pvar )
         Error(ast)

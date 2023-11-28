@@ -1,21 +1,21 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cstdlib>
+
 #include "BuiltinFunc.h"
 #include "GC.h"
 
-#define DEF(name, argc) \
-  BuiltinFunc(name, argc, [] (std::vector<Object*> args) -> Object* {
-
-#define ENDEF \
-  }),
+#define DEF(name, argc, code) \
+  BuiltinFunc(name, argc, \
+    [] (std::vector<Object*> args) -> Object* {(void)args; code})
 
 using namespace metro::objects;
 
 namespace metro::builtin {
 
 static std::vector<BuiltinFunc> const _all_functions {
-  DEF("print", -1)
+  DEF("print", -1, {
     std::stringstream ss;
 
     for( auto&& arg : args )
@@ -26,9 +26,9 @@ static std::vector<BuiltinFunc> const _all_functions {
     std::cout << str;
 
     return new Int((int)str.length());
-  ENDEF
+  }),
 
-  DEF("println", -1)
+  DEF("println", -1, {
     std::stringstream ss;
 
     for( auto&& arg : args )
@@ -39,7 +39,11 @@ static std::vector<BuiltinFunc> const _all_functions {
     std::cout << str << std::endl;
 
     return new Int((int)str.length() + 1);
-  ENDEF
+  }),
+
+  DEF("random", 2, {
+    
+  }),
 };
 
 Object* BuiltinFunc::call(std::vector<Object*> args) const {

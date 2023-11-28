@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 
 #include "Metro.h"
 #include "Color.h"
@@ -57,6 +58,8 @@ Metro::~Metro()
 }
 
 int Metro::main() {
+
+  srand((unsigned)time(nullptr));
 
   GC::initialize();
 
