@@ -1,7 +1,11 @@
+#include <cassert>
 #include "alert.h"
 #include "Error.h"
 #include "GC.h"
+#include "Lexer.h"
 #include "Parser.h"
+#include "SourceLoc.h"
+#include "Metro.h"
 
 namespace metro {
 
@@ -18,6 +22,47 @@ AST::Base* Parser::parse() {
   auto ast = new AST::Scope(nullptr);
 
   while( this->check() ) {
+    //
+    // import
+    //
+    if( this->eat("import") ) {
+      std::string path;
+      AST::Base* read = nullptr;
+
+      do {
+        path += this->expectIdentifier()->str;
+      } while( this->eat("/") );
+
+      this->expect(";");
+
+      path += ".metro";
+
+      auto mt = Metro::getInstance();
+      auto curscript = mt->getRunningScript();
+
+      auto importedScript =
+        curscript->_imported.emplace_back(new Metro::ScriptInfo(path));
+
+      auto save = curscript;
+
+      mt->currentScript = importedScript;
+
+      read = Parser(Lexer(importedScript->source).lex()).parse();
+
+      mt->currentScript = save;
+
+      assert(read->kind == ASTKind::Scope);
+
+      for( auto&& e : read->as<AST::Scope>()->list )
+        ast->list.emplace_back(e);
+
+      continue;
+    }
+
+
+    //
+    // function definition
+    //
     if( this->eat("def") ) {
       auto func = new AST::Function(this->ate);
 
@@ -116,8 +161,7 @@ AST::Base* Parser::factor() {
     case TokenKind::Char:
       this->next();
       return new AST::Value(tok,
-        new objects::Char(
-          objects::String::getConv().from_bytes(std::string(tok->str))[0]));
+        new objects::Char(objects::String::conv.from_bytes(std::string(tok->str))[0]));
 
     case TokenKind::String:
       this->next();

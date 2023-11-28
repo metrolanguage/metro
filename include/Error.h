@@ -8,7 +8,6 @@ namespace metro {
 class Error {
   struct ErrorLocation {
     enum Kind {
-      LC_Position,
       LC_Token,
       LC_AST,
     };
@@ -16,15 +15,8 @@ class Error {
     Kind kind;
     void* loc;
 
-    size_t as_position() const { return (size_t)this->loc; }
     Token* as_token() const { return (Token*)this->loc; }
     AST::Base* as_ast() const { return (AST::Base*)this->loc; }
-
-    ErrorLocation(size_t pos)
-      : kind(LC_Position),
-        loc((void*)pos)
-    {
-    }
 
     ErrorLocation(Token* token)
       : kind(LC_Token),

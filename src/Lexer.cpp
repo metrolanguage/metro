@@ -121,7 +121,11 @@ Token* Lexer::lex() {
         }
       }
 
-      Error(this->position)
+      cur = new Token(TokenKind::Unknown, nullptr, " ", pos);
+      cur->position = pos;
+      cur->source = &this->loc;
+
+      Error(cur)
         .setMessage("unknown token")
         .emit()
         .exit();

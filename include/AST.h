@@ -81,6 +81,9 @@ enum class ASTKind {
   Enum,
   Struct,
 
+  // namespace
+  Namespace,
+
   /* "import" be processed immediately in parsing. */
 
 };
@@ -344,7 +347,7 @@ struct Function : Base {
 
 struct Enum : Base {
   struct Enumerator {
-    
+
   };
 
   Token* name_token;

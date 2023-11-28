@@ -38,6 +38,9 @@ Metro::ScriptInfo::~ScriptInfo()
   delete this->result;
   delete this->ast;
   delete this->token;
+
+  for( auto&& S : this->_imported )
+    delete S;
 }
 
 Metro::Metro(int argc, char** argv)
@@ -73,7 +76,7 @@ int Metro::main() {
   return 0;
 }
 
-Metro::ScriptInfo const* Metro::getRunningScript() {
+Metro::ScriptInfo* Metro::getRunningScript() {
   return this->currentScript;
 }
 

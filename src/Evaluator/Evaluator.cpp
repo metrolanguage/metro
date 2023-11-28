@@ -15,8 +15,8 @@ Evaluator::Evaluator()
   : _loopScope(nullptr),
     _funcScope(nullptr),
     _scope(nullptr)
-  {
-  }
+{
+}
 
 //
 // === eval ===
