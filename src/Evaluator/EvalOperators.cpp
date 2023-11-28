@@ -237,7 +237,7 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
       switch( rhs->type.kind ) {
         // vector * int
         case Type::Int:
-          rhs = new USize(rhs->as<Int>()->value);
+          return obj_mul(expr, new USize(rhs->as<Int>()->value), lhs);
 
         // vector * usize
         case Type::USize:

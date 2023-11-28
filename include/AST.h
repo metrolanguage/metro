@@ -80,6 +80,7 @@ enum class ASTKind {
   // user-types
   Enum,
   Struct,
+  Class,
 
   // module
   Module,

@@ -10,7 +10,7 @@
 
 #define DEF(name, argc, code) \
   BuiltinFunc(name, argc, \
-    [] (AST::CallFunc* ast, std::vector<Object*>& args) -> Object* {(void)(ast, args); code})
+    [] (AST::CallFunc* ast, std::vector<Object*>& args) -> Object* {(void)ast; (void)args; code})
 
 using namespace metro::objects;
 
