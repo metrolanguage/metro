@@ -90,6 +90,15 @@ AST::Base* Parser::factor() {
   }
 
   //
+  // boolean
+  //
+  if( this->eat("true") )
+    return new AST::Value(tok, new objects::Bool(true));
+
+  if( this->eat("false") )
+    return new AST::Value(tok, new objects::Bool(false));
+
+  //
   // immediate
   switch( tok->kind ) {
     case TokenKind::Int:
@@ -103,6 +112,12 @@ AST::Base* Parser::factor() {
     case TokenKind::USize:
       this->next();
       return new AST::Value(tok, new objects::USize(std::stoull(std::string(tok->str))));
+
+    case TokenKind::Char:
+      this->next();
+      return new AST::Value(tok,
+        new objects::Char(
+          objects::String::getConv().from_bytes(std::string(tok->str))[0]));
 
     case TokenKind::String:
       this->next();

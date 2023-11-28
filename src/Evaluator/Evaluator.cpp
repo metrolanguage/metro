@@ -25,7 +25,6 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
-    case ASTKind::Namespace:
       break;
 
     case ASTKind::Value: {

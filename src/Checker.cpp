@@ -99,10 +99,6 @@ void Checker::check(AST::Base* ast) {
       break;
     }
 
-    case ASTKind::Namespace: {
-      todo_impl;
-    }
-  
     default: {
       auto x = ast->as<AST::Expr>();
 
