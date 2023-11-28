@@ -70,11 +70,11 @@ Error& Error::emit() {
 
   std::cout
     << COL_BOLD COL_RED << "error: " << this->message << COL_DEFAULT << std::endl
-    << "   --> " << source->path << ":" << linenum << std::endl
-    << "    |" << std::endl
+    << COL_CYAN "   ==> " << COL_BOLD << source->path << ":" << linenum << ":" << (1 + beginPos - trimBegin) <<std::endl
+    << COL_WHITE COL_BOLD "    |" << std::endl
     << utils::format("% 3zu | ", linenum) << errline << std::endl
-    << "    | " << std::string(beginPos - trimBegin, ' ') << "^" << std::endl
-    << "    |" << std::endl;
+    << "    | " << std::string(beginPos - trimBegin, ' ') << std::string(beginPos == endPos ? 1 : endPos - beginPos, '^') << std::endl
+    << "    |" << std::endl << COL_DEFAULT;
 
   Metro::emittedErrors.emplace_back(*this);
 
