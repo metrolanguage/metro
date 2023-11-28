@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "metro.h"
-#include "color.h"
+#include "Metro.h"
+#include "Color.h"
 #include "SourceLoc.h"
 #include "Error.h"
 

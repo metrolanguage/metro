@@ -1,7 +1,7 @@
 #include <iostream>
-#include "Error.h"
-#include "metro.h"
 #include "alert.h"
+#include "Metro.h"
+#include "Error.h"
 
 namespace metro {
 

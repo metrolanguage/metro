@@ -123,11 +123,11 @@ Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
         // float - int
         case Type::Int:
           return new Float(lhs->as<Float>()->value - rhs->as<Int>()->value);
-        
+
         // float - float
         case Type::Float:
           return new Float(lhs->as<Float>()->value - rhs->as<Float>()->value);
-        
+
         // float - usize
         case Type::USize:
           return new Float(lhs->as<Float>()->value - (Float::ValueType)rhs->as<Float>()->value);
