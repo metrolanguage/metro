@@ -2,6 +2,7 @@
 
 #include <functional>
 #include "Object.h"
+#include "AST.h"
 
 namespace metro::builtin {
 
@@ -11,13 +12,13 @@ namespace metro::builtin {
 
 struct BuiltinFunc {
   using Object = objects::Object;
-  using FuncPointer = std::function<Object*(std::vector<Object*>)>;
+  using FuncPointer = std::function<Object*(AST::CallFunc*, std::vector<Object*>)>;
 
   std::string   name;
   int           arg_count; // -1 = free args
   FuncPointer   impl;
 
-  Object* call(std::vector<Object*> args) const;
+  Object* call(AST::CallFunc* ast, std::vector<Object*> args) const;
 
   static BuiltinFunc const* find(std::string const& name);
   static std::vector<BuiltinFunc> const& getAllFunctions();

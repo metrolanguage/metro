@@ -1,18 +1,20 @@
 TARGET		?= 	metro
+DBGPREFIX	?=	d
 
 TOPDIR		?= 	$(CURDIR)
-BUILD			:= 	build
+BUILD		:= 	build
 INCLUDE		:= 	include
-SOURCE		:= 	src
+SOURCE		:= 	src \
+				src/Evaluator
 
-CC			:= clang
-CXX			:= clang++
+CC			:=	clang
+CXX			:=	clang++
 
-OPTI			?= -O0 -g -D_METRO_DEBUG_
-COMMONFLAGS		:= $(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)
-CFLAGS			:= $(COMMONFLAGS) -std=c17
-CXXFLAGS		:= $(COMMONFLAGS) -std=c++20
-LDFLAGS			:=
+OPTI		?=	-O0 -g -D_METRO_DEBUG_
+COMMON		:=	$(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)
+CFLAGS		:=	$(COMMON) -std=c17
+CXXFLAGS	:=	$(COMMON) -std=c++20
+LDFLAGS		:=
 
 %.o: %.c
 	@echo $(notdir $<)
@@ -27,7 +29,7 @@ ifneq ($(BUILD), $(notdir $(CURDIR)))
 CFILES			= $(notdir $(foreach dir,$(SOURCE),$(wildcard $(dir)/*.c)))
 CXXFILES		= $(notdir $(foreach dir,$(SOURCE),$(wildcard $(dir)/*.cpp)))
 
-export OUTPUT		= $(TOPDIR)/$(TARGET)
+export OUTPUT		= $(TOPDIR)/$(TARGET)$(DBGPREFIX)
 export VPATH		= $(foreach dir,$(SOURCE),$(TOPDIR)/$(dir))
 export INCLUDES		= $(foreach dir,$(INCLUDE),-I$(TOPDIR)/$(dir))
 export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cpp=.o)
@@ -38,14 +40,14 @@ all: $(BUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(TOPDIR)/Makefile
 
 release: $(BUILD)
-	@$(MAKE) --no-print-directory TARGET="metrod" OPTI="-O3" \
+	@$(MAKE) --no-print-directory OUTPUT="$(TOPDIR)/$(TARGET)" OPTI="-O3" \
 		LDFLAGS="-Wl,--gc-sections,-s" -C $(BUILD) -f $(TOPDIR)/Makefile
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 
 clean:
-	rm -rf $(TARGET) $(TARGET)d $(BUILD)
+	rm -rf $(TARGET) $(TARGET)$(DBGPREFIX) $(BUILD)
 
 re: clean all
 

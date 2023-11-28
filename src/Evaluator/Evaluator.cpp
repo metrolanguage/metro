@@ -77,7 +77,7 @@ Object* Evaluator::eval(AST::Base* ast) {
         args.emplace_back(this->eval(arg));
 
       if( cf->builtin )
-        return cf->builtin->call(std::move(args));
+        return cf->builtin->call(cf, std::move(args));
 
       auto& stack = this->push_stack(cf->userdef);
 
@@ -218,6 +218,11 @@ Object* Evaluator::eval(AST::Base* ast) {
           .setMessage("expected 'int' object")
           .emit()
           .exit();
+
+      if( begin->as<Int>()->value >= end->as<Int>()->value ) {
+        Error(x)
+          .setMessage("start value must less than end").emit().exit();
+      }
 
       return new Range(begin->as<Int>()->value, end->as<Int>()->value);
     }

@@ -3,12 +3,14 @@
 #include <vector>
 #include <cstdlib>
 
-#include "BuiltinFunc.h"
+#include "AST.h"
 #include "GC.h"
+#include "BuiltinFunc.h"
+#include "Error.h"
 
 #define DEF(name, argc, code) \
   BuiltinFunc(name, argc, \
-    [] (std::vector<Object*> args) -> Object* {(void)args; code})
+    [] (AST::CallFunc* ast, std::vector<Object*> args) -> Object* {(void)(ast, args); code})
 
 using namespace metro::objects;
 
@@ -41,13 +43,24 @@ static std::vector<BuiltinFunc> const _all_functions {
     return new Int((int)str.length() + 1);
   }),
 
-  DEF("random", 2, {
-    
+  DEF("random", -1, {
+    if( args.size() == 1 ) { // range
+      if( !args[0]->type.equals(Type::Range) ) {
+        goto invalid_args;
+      }
+
+      auto range = args[0]->as<Range>();
+      return new Int(rand() % (range->end - range->begin));
+    }
+
+  invalid_args:
+    Error(ast)
+      .setMessage("invalid arguments").emit().exit();
   }),
 };
 
-Object* BuiltinFunc::call(std::vector<Object*> args) const {
-  return this->impl(std::move(args));
+Object* BuiltinFunc::call(AST::CallFunc* ast, std::vector<Object*> args) const {
+  return this->impl(ast, std::move(args));
 }
 
 BuiltinFunc const* BuiltinFunc::find(std::string const& name) {
