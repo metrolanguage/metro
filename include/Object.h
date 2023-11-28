@@ -101,6 +101,29 @@ struct _Primitive : Object {
 };
 
 template <>
+struct _Primitive<bool, Type::Bool> : Object {
+  bool value;
+
+  std::string to_string() const {
+    return this->value ? "true" : "false";
+  }
+
+  Bool* clone() const {
+    return new Bool(this->value);
+  }
+
+  bool equals(Bool* obj) const {
+    return this->value == obj->value;
+  }
+
+  _Primitive(bool val = false)
+    : Object(Type::Bool),
+      value(val)
+  {
+  }
+};
+
+template <>
 struct _Primitive<std::u16string, Type::String> : Object {
   std::vector<Char*> value;
 
