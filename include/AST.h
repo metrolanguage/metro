@@ -81,8 +81,8 @@ enum class ASTKind {
   Enum,
   Struct,
 
-  // namespace
-  Namespace,
+  // module
+  Module,
 
   /* "import" be processed immediately in parsing. */
 
@@ -133,6 +133,7 @@ struct Value : Base {
     : Base(ASTKind::Value, token),
       object(object)
   {
+    this->object->noDelete = true;
   }
 
   ~Value()
@@ -169,18 +170,13 @@ struct Function;
 struct CallFunc : Base {
   std::vector<Base*> arguments;
 
-  Function const* userdef;              // if user-defined
-  builtin::BuiltinFunc const* builtin;  // if builtin
-
   std::string_view getName() const {
     return this->token->str;
   }
 
   CallFunc(Token* token, std::vector<Base*> arguments = { })
     : Base(ASTKind::CallFunc, token),
-      arguments(std::move(arguments)),
-      userdef(nullptr),
-      builtin(nullptr)
+      arguments(std::move(arguments))
   {
   }
 
@@ -347,14 +343,22 @@ struct Function : Base {
 
 struct Enum : Base {
   struct Enumerator {
-
+    
   };
 
   Token* name_token;
 
 };
 
+struct Module : Scope {
+  Token* nameToken;
 
+  Module(Token* token, Token* name)
+    : Scope(token),
+      nameToken(name)
+  {
+  }
+};
 
 } // namespace AST
 

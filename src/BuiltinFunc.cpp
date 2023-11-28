@@ -10,7 +10,7 @@
 
 #define DEF(name, argc, code) \
   BuiltinFunc(name, argc, \
-    [] (AST::CallFunc* ast, std::vector<Object*> args) -> Object* {(void)(ast, args); code})
+    [] (AST::CallFunc* ast, std::vector<Object*>& args) -> Object* {(void)(ast, args); code})
 
 using namespace metro::objects;
 
@@ -44,13 +44,32 @@ static std::vector<BuiltinFunc> const _all_functions {
   }),
 
   DEF("random", -1, {
-    if( args.size() == 1 ) { // range
+    // range
+    if( args.size() == 1 ) {
       if( !args[0]->type.equals(Type::Range) ) {
         goto invalid_args;
       }
 
       auto range = args[0]->as<Range>();
       return new Int(rand() % (range->end - range->begin));
+    }
+    // begin, end
+    else if( args.size() == 2 ) {
+      if( !args[0]->type.equals(Type::Int) || !args[1]->type.equals(Type::Int) ) {
+        goto invalid_args;
+      }
+
+      auto begin = args[0]->as<Int>()->value;
+      auto end = args[1]->as<Int>()->value;
+
+      if( begin >= end ) {
+        Error(ast->token)
+          .setMessage("start value must less than end")
+          .emit()
+          .exit();
+      }
+
+      return new Int(rand() % (end - begin));
     }
 
   invalid_args:
@@ -59,8 +78,8 @@ static std::vector<BuiltinFunc> const _all_functions {
   }),
 };
 
-Object* BuiltinFunc::call(AST::CallFunc* ast, std::vector<Object*> args) const {
-  return this->impl(ast, std::move(args));
+Object* BuiltinFunc::call(AST::CallFunc* ast, std::vector<Object*>& args) const {
+  return this->impl(ast, args);
 }
 
 BuiltinFunc const* BuiltinFunc::find(std::string const& name) {

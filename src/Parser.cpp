@@ -206,19 +206,7 @@ AST::Base* Parser::indexref() {
       this->expect("]");
     }
     else if( this->eat(".") ) {
-      auto tok = this->ate;
-
-      auto y = this->factor();
-
-      if( y->kind == ASTKind::CallFunc ) {
-        auto cf = y->as<AST::CallFunc>();
-
-        cf->arguments.insert(cf->arguments.begin(), x);
-        x = cf;
-      }
-      else {
-        x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
-      }
+      x = new AST::Expr(ASTKind::MemberAccess, this->ate, x, this->factor());
     }
     else
       break;

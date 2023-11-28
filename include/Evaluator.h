@@ -39,7 +39,7 @@ class Evaluator {
 
 public:
 
-  Evaluator();
+  Evaluator(AST::Scope* rootScope);
 
   /*
    * The core function.
@@ -68,6 +68,8 @@ public:
 private:
 
   Object*& evalIndexRef(AST::Expr* ast, Object* obj, Object* index);
+
+  Object* evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Object*>& args);
 
   CallStack& push_stack(AST::Function const* func);
   void pop_stack();
@@ -100,9 +102,13 @@ private:
     return &storage[name];
   }
 
+  std::tuple<AST::Function const*, builtin::BuiltinFunc const*>
+    findFunction(std::string_view name, Object* self);
+
+  AST::Scope* rootScope;
+
   Storage  globalStorage;
   std::vector<CallStack> callStacks;
-
 
   ScopeEvaluationFlags* _loopScope;
   ScopeEvaluationFlags* _funcScope;

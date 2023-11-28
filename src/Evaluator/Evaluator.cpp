@@ -11,8 +11,9 @@ namespace metro {
 
 using namespace objects;
 
-Evaluator::Evaluator()
-  : _loopScope(nullptr),
+Evaluator::Evaluator(AST::Scope* rootScope)
+  : rootScope(rootScope),
+    _loopScope(nullptr),
     _funcScope(nullptr),
     _scope(nullptr)
 {
@@ -52,7 +53,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       for( auto&& e : ast->as<AST::Array>()->elements )
         obj->append(this->eval(e));
-      
+
       return obj;
     }
 
@@ -70,29 +71,15 @@ Object* Evaluator::eval(AST::Base* ast) {
     //
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
-
       std::vector<Object*> args;
 
       for( auto&& arg : cf->arguments )
-        args.emplace_back(this->eval(arg));
+        GC::bind(args.emplace_back(this->eval(arg)));
 
-      if( cf->builtin )
-        return cf->builtin->call(cf, std::move(args));
+      auto result = this->evalCallFunc(cf, nullptr, args);
 
-      auto& stack = this->push_stack(cf->userdef);
-
-      for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
-        GC::bind(stack.storage[arg->str] = *it++);
-      }
-
-      this->eval(cf->userdef->scope);
-
-      auto result = stack.result;
-
-      this->pop_stack();
-
-      if( !result )
-        return None::getNone();
+      for( auto&& arg : args )
+        GC::unbind(arg);
 
       return result;
     }
@@ -113,27 +100,37 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto x = ast->as<AST::Expr>();
 
       auto obj = this->eval(x->left);
+      std::string name;
 
-      auto member = x->right->as<AST::Variable>();
-      auto name = member->getName();
+      if( x->right->kind == ASTKind::Variable ) {
+        auto member = x->right->as<AST::Variable>();
+        name = member->getName();
 
-      switch( obj->type.kind ) {
-        case Type::Int: {
-          if( name == "abs" )
-            return new Int(std::abs(obj->as<Int>()->value));
+        switch( obj->type.kind ) {
+          case Type::Int: {
+            if( name == "abs" )
+              return new Int(std::abs(obj->as<Int>()->value));
 
-          break;
-        }
+            break;
+          }
 
-        case Type::String: {
-          if( name == "count" )
-            return new USize(obj->as<String>()->value.size());
+          case Type::String: {
+            if( name == "count" )
+              return new USize(obj->as<String>()->value.size());
 
-          break;
+            break;
+          }
         }
       }
+      else if( x->right->kind == ASTKind::CallFunc ) {
+        alert;
 
-      Error(member)
+      }
+      else {
+        throw;
+      }
+
+      Error(x->right)
         .setMessage("object of type '" + obj->type.toString()
           + "' don't have a member '" + name + "'")
         .emit()
@@ -334,6 +331,46 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
     .exit();
 }
 
+Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Object*>& args) {
+
+  auto [userdef, builtin] = this->findFunction(ast->getName(), self);
+  auto name = std::string(ast->getName());
+
+  if( self ) {
+    args.insert(args.begin(), self);
+  }
+
+  if( builtin ) {
+    return builtin->call(ast, args);
+  }
+
+  if( !userdef ) {
+    auto error = Error(ast->token);
+
+    if( self )
+      error.setMessage("object of type '" + self->type.toString() + "' is not have member function '" + name + "'");
+    else
+      error.setMessage("undefined function name '" + name + "'");
+
+    error
+      .emit()
+      .exit();
+  }
+
+  auto& stack = this->push_stack(userdef);
+
+  for( auto it = args.begin(); auto&& arg : userdef->arguments )
+    stack.storage[arg->str] = *it++;
+
+  this->eval(userdef->scope);
+
+  auto result = stack.result;
+
+  this->pop_stack();
+
+  return result ? result : None::getNone();
+}
+
 Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
   return this->callStacks.emplace_back(func);
 }
@@ -346,6 +383,33 @@ void Evaluator::pop_stack() {
   }
 
   this->callStacks.pop_back();
+}
+
+std::tuple<AST::Function const*, builtin::BuiltinFunc const*> Evaluator::findFunction(std::string_view name, Object* self) {
+
+  for( auto&& bf : builtin::BuiltinFunc::getAllFunctions() ) {
+    if( !bf.have_self != !self )
+      continue;
+
+    if( self && !self->type.equals(bf.self_type) )
+      continue;
+
+    if( bf.name == name ) {
+      return { nullptr, &bf };
+    }
+  }
+
+  for( auto&& ast : this->rootScope->list ) {
+    if( ast->kind != ASTKind::Function )
+      continue;
+
+    auto func = ast->as<AST::Function>();
+
+    if( func->getName() == name )
+      return { func, nullptr };
+  }
+
+  return { nullptr, nullptr };
 }
 
 } // namespace metro
