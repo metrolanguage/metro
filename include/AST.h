@@ -74,10 +74,15 @@ enum class ASTKind {
   DoWhile,
   For,
 
-  // global scope
+  // function
   Function,
-  Namespace,
 
+  // user-types
+  Enum,
+  Struct,
+
+  // namespace
+  Namespace,
 
   /* "import" be processed immediately in parsing. */
 
@@ -339,6 +344,17 @@ struct Function : Base {
     delete this->scope;
   }
 };
+
+struct Enum : Base {
+  struct Enumerator {
+
+  };
+
+  Token* name_token;
+
+};
+
+
 
 } // namespace AST
 

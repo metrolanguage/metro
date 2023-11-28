@@ -16,11 +16,14 @@ namespace objects {
   struct Object;
 }
 
+class Lexer;
+class Parser;
+class Error;
+
 /*
  * Metro driver.
  */
 
-class Error;
 class Metro {
 public:
   struct ScriptInfo {
@@ -29,6 +32,7 @@ public:
     Token*            token;
     AST::Base*        ast;
     objects::Object*  result;
+    std::vector<ScriptInfo*> _imported;
 
     ScriptInfo(std::string const& path);
     ~ScriptInfo();
@@ -39,7 +43,7 @@ public:
 
   int main();
 
-  ScriptInfo const* getRunningScript();
+  ScriptInfo* getRunningScript();
 
   //
   // emit fatal error and exit with code 1.
@@ -57,11 +61,12 @@ private:
   std::vector<std::string> args;
   std::vector<ScriptInfo> scripts;
 
-  ScriptInfo const* currentScript;
+  ScriptInfo* currentScript;
 
   static std::vector<Error> emittedErrors; /* in Error.cpp */
 
   friend class Error;
+  friend class Parser;
 };
 
 } // namespace metro

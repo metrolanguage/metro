@@ -1,7 +1,7 @@
 #include <iostream>
-#include "Error.h"
-#include "metro.h"
 #include "alert.h"
+#include "Metro.h"
+#include "Error.h"
 
 namespace metro {
 
@@ -19,33 +19,18 @@ Error& Error::setMessage(std::string const& msg) {
 }
 
 Error& Error::emit() {
-  auto script = Metro::getInstance()->getRunningScript();
-  auto const& source = script->source;
-
   size_t beginPos = 0;
   size_t endPos   = 0;
-
-  size_t trimBegin  = 0;
-  size_t trimEnd    = source.data.length();
-
-  size_t linenum = 1;
+  SourceLoc const* source = nullptr;
 
   switch( this->location.kind ) {
-    case ErrorLocation::LC_Position: {
-      alert;
-      size_t pos = (size_t)this->location.loc;
-
-      beginPos = endPos = pos;
-
-      break;
-    }
-
     case ErrorLocation::LC_Token: {
       alert;
       auto tok = (Token*)this->location.loc;
 
       beginPos = tok->position;
       endPos = tok->getEndPos();
+      source = tok->source;
 
       break;
     }
@@ -57,33 +42,39 @@ Error& Error::emit() {
 
       beginPos = ast->token->position;
       endPos = ast->token->getEndPos();
+      source = ast->token->source;
 
       break;
     }
   }
 
+  size_t trimBegin  = 0;
+  size_t trimEnd    = source->data.length();
+
+  size_t linenum = 1;
+
   for( size_t i = 0; i < beginPos; i++ ) {
-    if( source.data[i] == '\n' ) {
+    if( source->data[i] == '\n' ) {
       linenum++;
       trimBegin = i + 1;
     }
   }
 
-  for( trimEnd = endPos; trimEnd < source.data.length(); trimEnd++ ) {
-    if( source.data[trimEnd] == '\n' )
+  for( trimEnd = endPos; trimEnd < source->data.length(); trimEnd++ ) {
+    if( source->data[trimEnd] == '\n' )
       break;
   }
 
   auto errline =
-    source.data.substr(trimBegin, trimEnd - trimBegin);
+    source->data.substr(trimBegin, trimEnd - trimBegin);
 
   std::cout
     << COL_BOLD COL_RED << "error: " << this->message << COL_DEFAULT << std::endl
-    << "   --> " << source.path << ":" << linenum << std::endl
-    << "    |" << std::endl
+    << COL_CYAN "   ==> " << COL_BOLD << source->path << ":" << linenum << ":" << (1 + beginPos - trimBegin) <<std::endl
+    << COL_WHITE COL_BOLD "    |" << std::endl
     << utils::format("% 3zu | ", linenum) << errline << std::endl
-    << "    | " << std::string(beginPos - trimBegin, ' ') << "^" << std::endl
-    << "    |" << std::endl;
+    << "    | " << std::string(beginPos - trimBegin, ' ') << std::string(beginPos == endPos ? 1 : endPos - beginPos, '^') << std::endl
+    << "    |" << std::endl << COL_DEFAULT;
 
   Metro::emittedErrors.emplace_back(*this);
 

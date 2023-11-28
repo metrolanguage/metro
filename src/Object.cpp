@@ -7,19 +7,21 @@ namespace metro::objects {
 
 None None::_none;
 
-std::map<Object*, bool> __dbg_map;
+debug(
+  std::map<Object*, bool> __dbg_map;
 
-struct XX {
-  ~XX() {
-    for( auto&& [p, b] : __dbg_map ) {
-      if( b ) {
-        alertmsg("memleak: " << p << ": " << p->to_string());
+  struct XX {
+    ~XX() {
+      for( auto&& [p, b] : __dbg_map ) {
+        if( b ) {
+          alertmsg("memleak: " << p << ": " << p->to_string());
+        }
       }
     }
-  }
-};
+  };
 
-static XX _xx;
+  static XX _xx;
+)
 
 Object::Object(Type type)
   : type(std::move(type)),
@@ -27,18 +29,19 @@ Object::Object(Type type)
     noDelete(false)
 {
   GC::_registerObject(this);
-  alertmsg("obj new:    " << this);
 
-  if( GC::isEnabled() )
-    __dbg_map[this] = 1;
+  debug(
+    if( GC::isEnabled() )
+      __dbg_map[this] = 1;
+  )
 }
 
 Object::~Object()
 {
-  alertmsg("obj delete: " << this);
-
-  if( GC::isEnabled() )
-    __dbg_map[this] = 0;
+  debug(
+    if( GC::isEnabled() )
+      __dbg_map[this] = 0;
+  )
 }
 
 bool Object::equals(Object* object) const {

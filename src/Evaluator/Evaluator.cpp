@@ -15,8 +15,8 @@ Evaluator::Evaluator()
   : _loopScope(nullptr),
     _funcScope(nullptr),
     _scope(nullptr)
-  {
-  }
+{
+}
 
 //
 // === eval ===
@@ -25,7 +25,6 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
-    case ASTKind::Namespace:
       break;
 
     case ASTKind::Value: {
@@ -33,7 +32,11 @@ Object* Evaluator::eval(AST::Base* ast) {
     }
 
     case ASTKind::Variable: {
-      auto pvar = this->getCurrentStorage()[ast->as<AST::Variable>()->getName()];
+      auto var = ast->as<AST::Variable>();
+      auto pvar = this->getCurrentStorage()[var->getName()];
+
+      if( this->inFunction() && !pvar )
+        pvar = this->globalStorage[var->getName()];
 
       if( !pvar )
         Error(ast)
@@ -74,7 +77,7 @@ Object* Evaluator::eval(AST::Base* ast) {
         args.emplace_back(this->eval(arg));
 
       if( cf->builtin )
-        return cf->builtin->call(std::move(args));
+        return cf->builtin->call(cf, std::move(args));
 
       auto& stack = this->push_stack(cf->userdef);
 
@@ -215,6 +218,11 @@ Object* Evaluator::eval(AST::Base* ast) {
           .setMessage("expected 'int' object")
           .emit()
           .exit();
+
+      if( begin->as<Int>()->value >= end->as<Int>()->value ) {
+        Error(x)
+          .setMessage("start value must less than end").emit().exit();
+      }
 
       return new Range(begin->as<Int>()->value, end->as<Int>()->value);
     }

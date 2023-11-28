@@ -67,12 +67,24 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
 
     case Type::String:
       switch( rhs->type.kind ) {
+        // string + char
         case Type::Char:
           return lhs->as<String>()->clone()->append(rhs->as<Char>());
 
+        // string + string
         case Type::String:
           return lhs->as<String>()->clone()->append(rhs->as<String>());
       }
+      break;
+
+    case Type::Char:
+      switch( rhs->type.kind ) {
+        case Type::String: {
+          rhs->as<String>()->value.insert(rhs->as<String>()->value.begin(), lhs->as<Char>()->clone());
+          return rhs;
+        }
+      }
+
       break;
   }
 
@@ -111,11 +123,11 @@ Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
         // float - int
         case Type::Int:
           return new Float(lhs->as<Float>()->value - rhs->as<Int>()->value);
-        
+
         // float - float
         case Type::Float:
           return new Float(lhs->as<Float>()->value - rhs->as<Float>()->value);
-        
+
         // float - usize
         case Type::USize:
           return new Float(lhs->as<Float>()->value - (Float::ValueType)rhs->as<Float>()->value);

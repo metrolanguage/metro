@@ -1,21 +1,23 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include "BuiltinFunc.h"
+#include <cstdlib>
+
+#include "AST.h"
 #include "GC.h"
+#include "BuiltinFunc.h"
+#include "Error.h"
 
-#define DEF(name, argc) \
-  BuiltinFunc(name, argc, [] (std::vector<Object*> args) -> Object* {
-
-#define ENDEF \
-  }),
+#define DEF(name, argc, code) \
+  BuiltinFunc(name, argc, \
+    [] (AST::CallFunc* ast, std::vector<Object*> args) -> Object* {(void)(ast, args); code})
 
 using namespace metro::objects;
 
 namespace metro::builtin {
 
 static std::vector<BuiltinFunc> const _all_functions {
-  DEF("print", -1)
+  DEF("print", -1, {
     std::stringstream ss;
 
     for( auto&& arg : args )
@@ -26,9 +28,9 @@ static std::vector<BuiltinFunc> const _all_functions {
     std::cout << str;
 
     return new Int((int)str.length());
-  ENDEF
+  }),
 
-  DEF("println", -1)
+  DEF("println", -1, {
     std::stringstream ss;
 
     for( auto&& arg : args )
@@ -39,11 +41,26 @@ static std::vector<BuiltinFunc> const _all_functions {
     std::cout << str << std::endl;
 
     return new Int((int)str.length() + 1);
-  ENDEF
+  }),
+
+  DEF("random", -1, {
+    if( args.size() == 1 ) { // range
+      if( !args[0]->type.equals(Type::Range) ) {
+        goto invalid_args;
+      }
+
+      auto range = args[0]->as<Range>();
+      return new Int(rand() % (range->end - range->begin));
+    }
+
+  invalid_args:
+    Error(ast)
+      .setMessage("invalid arguments").emit().exit();
+  }),
 };
 
-Object* BuiltinFunc::call(std::vector<Object*> args) const {
-  return this->impl(std::move(args));
+Object* BuiltinFunc::call(AST::CallFunc* ast, std::vector<Object*> args) const {
+  return this->impl(ast, std::move(args));
 }
 
 BuiltinFunc const* BuiltinFunc::find(std::string const& name) {

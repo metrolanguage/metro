@@ -130,7 +130,7 @@
     printf("%s" COL_DEFAULT "\n", buf2);
   }
 #else
-  #define debug(...)      (void)0;
+  #define debug(...)      ;
   #define alert           (void)0
   #define alertmsg(...)   (void)0
   #define alert_ctor      (void)0

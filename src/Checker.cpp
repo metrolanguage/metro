@@ -16,11 +16,7 @@ void Checker::check(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Value: {
-      auto val = ast->as<AST::Value>();
-      
-      alertmsg(val << ": " << val->object->to_string());
-      val->object->noDelete = true;
-
+      ast->as<AST::Value>()->object->noDelete = true;
       break;
     }
 
@@ -40,16 +36,34 @@ void Checker::check(AST::Base* ast) {
       for( auto&& arg : cf->arguments )
         this->check(arg);
 
-      if( (cf->userdef = this->findUserDefFunction(cf->getName())) )
-        break;
+      int fmlCount = 0;
+      int actCount = (int)cf->arguments.size();
 
-      cf->builtin =
-        builtin::BuiltinFunc::find(std::string(cf->getName()));
+      if( (cf->userdef = this->findUserDefFunction(cf->getName())) ) {
+        fmlCount = cf->userdef->arguments.size();
+      }
+      else if( (cf->builtin = builtin::BuiltinFunc::find(std::string(cf->getName()))) ) {
+        fmlCount = cf->builtin->arg_count;
 
-      if( !cf->builtin )
+        if( fmlCount == -1 ) // free args
+          break;
+      }
+      else {
         Error(cf->token)
           .setMessage("undefined function name")
           .emit();
+      }
+
+      if( fmlCount < actCount ) {
+        Error(cf->token)
+          .setMessage("too many arguments")
+          .emit();
+      }
+      else if( fmlCount > actCount ) {
+        Error(cf->token)
+          .setMessage("too few arguments")
+          .emit();
+      }
 
       break;
     }
@@ -99,10 +113,6 @@ void Checker::check(AST::Base* ast) {
       break;
     }
 
-    case ASTKind::Namespace: {
-      todo_impl;
-    }
-  
     default: {
       auto x = ast->as<AST::Expr>();
 

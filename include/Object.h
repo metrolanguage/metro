@@ -101,6 +101,29 @@ struct _Primitive : Object {
 };
 
 template <>
+struct _Primitive<bool, Type::Bool> : Object {
+  bool value;
+
+  std::string to_string() const {
+    return this->value ? "true" : "false";
+  }
+
+  Bool* clone() const {
+    return new Bool(this->value);
+  }
+
+  bool equals(Bool* obj) const {
+    return this->value == obj->value;
+  }
+
+  _Primitive(bool val = false)
+    : Object(Type::Bool),
+      value(val)
+  {
+  }
+};
+
+template <>
 struct _Primitive<std::u16string, Type::String> : Object {
   std::vector<Char*> value;
 
@@ -116,9 +139,8 @@ struct _Primitive<std::u16string, Type::String> : Object {
   String* append(Char* ch);
   String* append(String* str);
 
-private:
-  static inline std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
-  friend struct _Primitive<char16_t, Type::Char>;
+  static inline
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
 };
 
 template <>

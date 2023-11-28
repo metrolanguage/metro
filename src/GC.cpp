@@ -11,9 +11,10 @@
 #include <mutex>
 #include <memory>
 #include <algorithm>
-#include "GC.h"
+
 #include "alert.h"
-#include "metro.h"
+#include "Metro.h"
+#include "GC.h"
 
 //  The maximum count of object in memory.
 //  Collect all objects when overed this count.

@@ -1,7 +1,8 @@
 #include <iostream>
+#include <cstdlib>
 
-#include "metro.h"
-#include "color.h"
+#include "Metro.h"
+#include "Color.h"
 #include "SourceLoc.h"
 #include "Error.h"
 
@@ -38,6 +39,9 @@ Metro::ScriptInfo::~ScriptInfo()
   delete this->result;
   delete this->ast;
   delete this->token;
+
+  for( auto&& S : this->_imported )
+    delete S;
 }
 
 Metro::Metro(int argc, char** argv)
@@ -54,6 +58,8 @@ Metro::~Metro()
 }
 
 int Metro::main() {
+
+  srand((unsigned)time(nullptr));
 
   GC::initialize();
 
@@ -73,7 +79,7 @@ int Metro::main() {
   return 0;
 }
 
-Metro::ScriptInfo const* Metro::getRunningScript() {
+Metro::ScriptInfo* Metro::getRunningScript() {
   return this->currentScript;
 }
 
