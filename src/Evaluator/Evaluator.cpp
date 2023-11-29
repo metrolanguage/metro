@@ -26,6 +26,9 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
+    case ASTKind::Enum:
+    case ASTKind::Struct:
+    case ASTKind::Class:
       break;
 
     case ASTKind::Value: {

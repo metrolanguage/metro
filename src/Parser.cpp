@@ -59,6 +59,53 @@ AST::Base* Parser::parse() {
       continue;
     }
 
+    //
+    // enum
+    // 
+    if( this->eat("enum") ) {
+      auto ast = new AST::Enum(this->ate, this->expectIdentifier());
+
+      this->expect("{");
+
+      if( this->eat("}") ) {
+        Error(ast->token)
+          .setMessage("enum cannot be empty")
+          .emit()
+          .exit();
+      }
+
+      do {
+        ast->enumerators.emplace_back(this->expectIdentifier());
+      } while( this->eat(",") );
+
+      this->expect("}");
+
+      continue;
+    }
+
+    //
+    // struct
+    //
+    if( this->eat("struct") ) {
+      auto ast = new AST::Struct(this->ate, this->expectIdentifier());
+
+      this->expect("{");
+
+      if( this->eat("}") ) {
+        Error(ast->token)
+          .setMessage("struct cannot be empty")
+          .emit()
+          .exit();
+      }
+
+      do {
+        ast->members.emplace_back(this->expectIdentifier());
+      } while( this->eat(",") );
+
+      this->expect("}");
+
+      continue;
+    }
 
     //
     // function definition
