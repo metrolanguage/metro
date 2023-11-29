@@ -117,6 +117,9 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       auto obj = new Vector();
 
+      obj->type = Type::Struct;
+      obj->type.astStruct = S;
+
       for( auto it = S->members.begin(); auto&& arg : x->arguments ) {
         auto init = arg->as<AST::Expr>();
 
@@ -165,6 +168,17 @@ Object* Evaluator::eval(AST::Base* ast) {
           case Type::String: {
             if( name == "count" )
               return new USize(obj->as<String>()->value.size());
+
+            break;
+          }
+
+          case Type::Struct: {
+            auto S = obj->type.astStruct;
+
+            for( size_t i = 0; i < S->members.size(); i++ ) {
+              if( S->members[i]->str == name )
+                return obj->as<Vector>()->elements[i];
+            }
 
             break;
           }
@@ -506,7 +520,9 @@ std::tuple<AST::Function const*, builtin::BuiltinFunc const*> Evaluator::findFun
 
 AST::Struct const* Evaluator::findStruct(std::string_view name) {
   for( auto&& ast : this->rootScope->list ) {
-    if( ast->kind == ASTKind::Struct && ast->as<AST::Struct>()->name == name )
+    alertmsg(ast->token->str);
+
+    if( ast->kind == ASTKind::Struct && ast->as<AST::Struct>()->getName() == name )
       return ast->as<AST::Struct>();
   }
 

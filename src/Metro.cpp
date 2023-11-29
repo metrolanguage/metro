@@ -104,8 +104,6 @@ void Metro::evaluateScript(Metro::ScriptInfo& script) {
 
   script.ast = parser.parse();
 
-  return;
-
   Error::check();
 
   Evaluator eval{ script.ast->as<AST::Scope>() };

@@ -27,17 +27,7 @@ struct Object {
     return (T*)this;
   }
 
-  bool isNumeric() const {
-    switch( type.kind ) {
-      case Type::Int:
-      case Type::Float:
-      case Type::USize:
-        return true;
-    }
-
-    return false;
-  }
-
+  bool isNumeric() const;
   bool equals(Object* object) const;
 
   virtual std::string to_string() const = 0;
@@ -180,39 +170,10 @@ struct Vector : Object {
     return this->elements.emplace_back(obj);
   }
 
-  std::string to_string() const {
-    if( this->elements.empty() )
-      return "[]";
-    
-    std::string ret = "[";
+  std::string to_string() const;
+  Vector* clone() const;
 
-    for( auto&& e : this->elements ) {
-      ret += e->to_string();
-      if( e != *this->elements.rbegin() ) ret += ", ";
-    }
-
-    return ret + ']';
-  }
-
-  Vector* clone() const {
-    auto vec = new Vector();
-
-    for( auto&& e : this->elements )
-      vec->append(e->clone());
-    
-    return vec;
-  }
-
-  bool equals(Vector* vec) const {
-    if( this->elements.size() != vec->elements.size() )
-      return false;
-
-    for( auto it = this->elements.begin(); auto&& e : vec->elements )
-      if( !(*it)->equals(e) )
-        return false;
-
-    return true;
-  }
+  bool equals(Vector* vec) const;
 
   /*
    * getMember():
@@ -220,6 +181,7 @@ struct Vector : Object {
    *   only can use in Type::Struct
    */
   Object** getMember(std::string const& name);
+
   Vector(std::vector<Object*> elements = { })
     : Object(Type::Vector),
       elements(std::move(elements))

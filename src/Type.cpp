@@ -28,6 +28,13 @@ bool Type::equals(Type const& type) const {
   if( this->kind != type.kind )
     return false;
 
+  if( this->kind == Type::Struct && this->astStruct != type.astStruct )
+    return false;
+
+  if( this->kind == Type::Enumerator
+    && (this->astEnum != type.astEnum || this->enumeratorIndex != type.enumeratorIndex) )
+    return false;
+
   if( this->params.size() != type.params.size() )
     return false;
 

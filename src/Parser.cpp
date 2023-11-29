@@ -63,23 +63,24 @@ AST::Base* Parser::parse() {
     // enum
     // 
     if( this->eat("enum") ) {
-      auto ast = new AST::Enum(this->ate, this->expectIdentifier());
+      auto x = new AST::Enum(this->ate, this->expectIdentifier());
 
       this->expect("{");
 
       if( this->eat("}") ) {
-        Error(ast->token)
+        Error(x->token)
           .setMessage("enum cannot be empty")
           .emit()
           .exit();
       }
 
       do {
-        ast->enumerators.emplace_back(this->expectIdentifier());
+        x->enumerators.emplace_back(this->expectIdentifier());
       } while( this->eat(",") );
 
       this->expect("}");
 
+      ast->list.emplace_back(x);
       continue;
     }
 
@@ -87,23 +88,24 @@ AST::Base* Parser::parse() {
     // struct
     //
     if( this->eat("struct") ) {
-      auto ast = new AST::Struct(this->ate, this->expectIdentifier());
+      auto x = new AST::Struct(this->ate, this->expectIdentifier());
 
       this->expect("{");
 
       if( this->eat("}") ) {
-        Error(ast->token)
+        Error(x->token)
           .setMessage("struct cannot be empty")
           .emit()
           .exit();
       }
 
       do {
-        ast->members.emplace_back(this->expectIdentifier());
+        x->members.emplace_back(this->expectIdentifier());
       } while( this->eat(",") );
 
       this->expect("}");
 
+      ast->list.emplace_back(x);
       continue;
     }
 
@@ -184,11 +186,8 @@ AST::Base* Parser::factor() {
   //
   // boolean
   //
-  if( this->eat("true") )
-    return new AST::Value(tok, new objects::Bool(true));
-
-  if( this->eat("false") )
-    return new AST::Value(tok, new objects::Bool(false));
+  if( this->eat("true") )  return new AST::Value(tok, new objects::Bool(true));
+  if( this->eat("false") ) return new AST::Value(tok, new objects::Bool(false));
 
   //
   // immediate
@@ -229,31 +228,6 @@ AST::Base* Parser::factor() {
 
           this->expect(")");
         }
-
-        return ast;
-      }
-
-      //
-      // construct a struct
-      //
-      if( this->eat("{") ) {
-        if( this->eat("}") ) {
-          Error(this->ate)
-            .setMessage("need at least one member").emit().exit();
-        }
-
-        auto ast = new AST::CallFunc(tok);
-
-        do {
-          auto name = new AST::Variable(this->expectIdentifier());
-
-          auto colon = this->expect(":");
-          auto val = this->expr();
-
-          ast->arguments.emplace_back(new AST::Expr(ASTKind::Pair, colon, name, val));
-        } while( this->eat(",") );
-
-        this->expect("}");
 
         return ast;
       }
@@ -299,6 +273,35 @@ AST::Base* Parser::unary() {
 
   if( this->eat("!") )
     return new AST::Expr(ASTKind::Not, this->ate, this->indexref(), nullptr);
+
+  if( this->eat("new") ) {
+    auto ast = new AST::CallFunc(this->ate);
+
+    ast->kind = ASTKind::New;
+    
+    ast->name =
+      (ast->nameToken = this->expectIdentifier())->str;
+
+    this->expect("{");
+
+    if( this->eat("}") ) {
+      Error(this->ate)
+        .setMessage("need at least one member").emit().exit();
+    }
+
+    do {
+      auto name = new AST::Variable(this->expectIdentifier());
+
+      auto colon = this->expect(":");
+      auto val = this->expr();
+
+      ast->arguments.emplace_back(new AST::Expr(ASTKind::Pair, colon, name, val));
+    } while( this->eat(",") );
+
+    this->expect("}");
+
+    return ast;
+  }
 
   return this->indexref();
 }
