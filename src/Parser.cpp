@@ -235,8 +235,27 @@ AST::Base* Parser::factor() {
 
       //
       // construct a struct
+      //
       if( this->eat("{") ) {
-        
+        if( this->eat("}") ) {
+          Error(this->ate)
+            .setMessage("need at least one member").emit().exit();
+        }
+
+        auto ast = new AST::CallFunc(tok);
+
+        do {
+          auto name = new AST::Variable(this->expectIdentifier());
+
+          auto colon = this->expect(":");
+          auto val = this->expr();
+
+          ast->arguments.emplace_back(new AST::Expr(ASTKind::Pair, colon, name, val));
+        } while( this->eat(",") );
+
+        this->expect("}");
+
+        return ast;
       }
 
       return new AST::Variable(tok);
