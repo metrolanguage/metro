@@ -13,13 +13,17 @@ static char const* names[] {
   "vector",
   "dict",
   "tuple",
-  "range"
+  "range",
+  "args",
+  "any",
 };
 
 bool Type::equals(Type const& type) const {
-  if( this->kind != type.kind ) {
+  if( this->kind == Kind::Any || type.kind == Kind::Any )
+    return true;
+
+  if( this->kind != type.kind )
     return false;
-  }
 
   if( this->params.size() != type.params.size() )
     return false;

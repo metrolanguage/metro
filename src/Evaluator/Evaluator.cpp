@@ -131,8 +131,7 @@ Object* Evaluator::eval(AST::Base* ast) {
       }
 
       Error(x->right)
-        .setMessage("object of type '" + obj->type.toString()
-          + "' don't have a member '" + name + "'")
+        .setMessage("object of type '" + obj->type.toString() + "' don't have a member '" + name + "'")
         .emit()
         .exit();
     }
@@ -223,7 +222,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       return new Range(begin->as<Int>()->value, end->as<Int>()->value);
     }
-
+ 
     //
     // assign
     //
@@ -357,6 +356,19 @@ Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Ob
       .exit();
   }
 
+  if( userdef->arguments.size() != args.size() ) {
+    auto err = Error(ast->token);
+
+    if( userdef->arguments.size() < args.size() ) {
+      err.setMessage("too many arguments");
+    }
+    else {
+      err.setMessage("too few arguments");
+    }
+
+    err.emit().exit();
+  }
+
   auto& stack = this->push_stack(userdef);
 
   for( auto it = args.begin(); auto&& arg : userdef->arguments )
@@ -385,6 +397,38 @@ void Evaluator::pop_stack() {
   this->callStacks.pop_back();
 }
 
+Evaluator::ScopeEvaluationFlags& Evaluator::getCurrentScope() {
+  return *this->_scope;
+}
+
+bool Evaluator::inFunction() const {
+  return !this->callStacks.empty();
+}
+
+Evaluator::CallStack& Evaluator::getCurrentCallStack() {
+  return *callStacks.rbegin();
+}
+
+Evaluator::Storage& Evaluator::getCurrentStorage() {
+  if( this->inFunction() )
+    return this->getCurrentCallStack().storage;
+
+  return this->globalStorage;
+}
+
+Object** Evaluator::findVariable(std::string_view name, bool allowCreate) {
+  auto& storage = this->getCurrentStorage();
+
+  if( !storage.contains(name) && !allowCreate )
+    return nullptr;
+
+  return &storage[name];
+}
+
+
+//
+// -- findFunction() --
+//
 std::tuple<AST::Function const*, builtin::BuiltinFunc const*> Evaluator::findFunction(std::string_view name, Object* self) {
 
   for( auto&& bf : builtin::BuiltinFunc::getAllFunctions() ) {

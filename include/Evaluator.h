@@ -74,36 +74,26 @@ private:
   CallStack& push_stack(AST::Function const* func);
   void pop_stack();
 
-  ScopeEvaluationFlags& getCurrentScope() {
-    return *this->_scope;
-  }
+  ScopeEvaluationFlags& getCurrentScope();
 
-  bool inFunction() const {
-    return !this->callStacks.empty();
-  }
+  bool inFunction() const;
 
-  CallStack& getCurrentCallStack() {
-    return *callStacks.rbegin();
-  }
+  CallStack& getCurrentCallStack() ;
 
-  Storage& getCurrentStorage() {
-    if( this->inFunction() )
-      return this->getCurrentCallStack().storage;
+  Storage& getCurrentStorage();
 
-    return this->globalStorage;
-  }
+  Object** findVariable(std::string_view name, bool allowCreate = true);
 
-  Object** findVariable(std::string_view name, bool allowCreate = true) {
-    auto& storage = this->getCurrentStorage();
 
-    if( !storage.contains(name) && !allowCreate )
-      return nullptr;
+  /*
+    -- findFunction() --
 
-    return &storage[name];
-  }
+    about:
+      Find the function just matching same name.
+      
+   */
+  std::tuple<AST::Function const*, builtin::BuiltinFunc const*> findFunction(std::string_view name, Object* self);
 
-  std::tuple<AST::Function const*, builtin::BuiltinFunc const*>
-    findFunction(std::string_view name, Object* self);
 
   AST::Scope* rootScope;
 

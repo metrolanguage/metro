@@ -18,9 +18,12 @@ struct Type {
     Dict,
     Tuple,
     Range,
+    Args,
+    Any,
   };
 
   Kind kind;
+  bool isConst;
   std::vector<Type> params;
 
   bool equals(Type const& type) const;
@@ -39,12 +42,14 @@ struct Type {
   }
 
   Type(Kind kind = None)
-    : kind(kind)
+    : kind(kind),
+      isConst(false)
   {
   }
 
   Type(Kind kind, std::vector<Type>&& params)
     : kind(kind),
+      isConst(false),
       params(std::move(params))
   {
   }

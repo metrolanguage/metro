@@ -82,9 +82,6 @@ enum class ASTKind {
   Struct,
   Class,
 
-  // module
-  Module,
-
   /* "import" be processed immediately in parsing. */
 
 };
@@ -343,23 +340,17 @@ struct Function : Base {
 };
 
 struct Enum : Base {
-  struct Enumerator {
-    
-  };
-
-  Token* name_token;
-
-};
-
-struct Module : Scope {
   Token* nameToken;
+  std::vector<Token*> enumerators;
 
-  Module(Token* token, Token* name)
-    : Scope(token),
-      nameToken(name)
+  Enum(Token* token, Token* nameToken)
+    : Base(ASTKind::Enum, token),
+      nameToken(nameToken)
   {
   }
 };
+
+
 
 } // namespace AST
 
