@@ -15,9 +15,11 @@ enum class ASTKind {
   Value,
   Variable,
   CallFunc,
-  
+  New,
+
   Array,
   Tuple,
+  Pair,
 
   // member access
   MemberAccess,
@@ -167,15 +169,11 @@ struct Array : Base {
 };
 
 struct Function;
-struct CallFunc : Base {
+struct CallFunc : WithName {
   std::vector<Base*> arguments;
 
-  std::string_view getName() const {
-    return this->token->str;
-  }
-
   CallFunc(Token* token, std::vector<Base*> arguments = { })
-    : Base(ASTKind::CallFunc, token),
+    : WithName(ASTKind::CallFunc, token),
       arguments(std::move(arguments))
   {
   }

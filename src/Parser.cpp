@@ -217,6 +217,8 @@ AST::Base* Parser::factor() {
     case TokenKind::Identifier: {
       this->next();
 
+      //
+      // call func
       if( this->eat("(") ) {
         auto ast = new AST::CallFunc(tok);
         
@@ -229,6 +231,12 @@ AST::Base* Parser::factor() {
         }
 
         return ast;
+      }
+
+      //
+      // construct a struct
+      if( this->eat("{") ) {
+        
       }
 
       return new AST::Variable(tok);
@@ -345,20 +353,32 @@ AST::Base* Parser::range() {
 }
 
 /*
+ * pair
+ */
+AST::Base* Parser::pair() {
+  auto x = this->range();
+
+  if( this->eat(":") )
+    return new AST::Expr(ASTKind::Pair, this->ate, x, this->range());
+
+  return x;
+}
+
+/*
  * compare
  */
 AST::Base* Parser::compare() {
-  auto x = this->range();
+  auto x = this->pair();
 
   while( this->check() ) {
     if( this->eat(">") )
-      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->range());
+      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->pair());
     else if( this->eat("<") )
-      x = new AST::Expr(ASTKind::Bigger, this->ate, this->range(), x);
+      x = new AST::Expr(ASTKind::Bigger, this->ate, this->pair(), x);
     else if( this->eat(">=") )
-      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->range());
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->pair());
     else if( this->eat("<=") )
-      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->range(), x);
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->pair(), x);
     else
       break;
   }

@@ -94,6 +94,11 @@ private:
    */
   std::tuple<AST::Function const*, builtin::BuiltinFunc const*> findFunction(std::string_view name, Object* self);
 
+  /*
+    -- findStruct() --
+   */
+  AST::Struct const* findStruct(std::string_view name);
+
 
   AST::Scope* rootScope;
 

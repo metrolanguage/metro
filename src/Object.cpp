@@ -2,6 +2,7 @@
 #include <map>
 #include "alert.h"
 #include "GC.h"
+#include "AST.h"
 
 namespace metro::objects {
 
@@ -121,6 +122,22 @@ String* String::append(String* str) {
     this->append(c->clone());
 
   return this;
+}
+
+/*
+  * getMember():
+  *   find the member with name
+  *   only can use in Type::Struct
+  */
+Object** Vector::getMember(std::string const& name) {
+  for( size_t i = 0; auto&& m : this->type.astStruct->members ) {
+    if( m->str == name )
+      return &this->elements[i];
+
+    i++;
+  }
+
+  return nullptr;
 }
 
 } // namespace metro::objects

@@ -69,6 +69,12 @@ Object* Evaluator::eval(AST::Base* ast) {
       return obj;
     }
 
+    case ASTKind::Pair: {
+      auto x = ast->as<AST::Expr>();
+
+      return new Pair(this->eval(x->left), this->eval(x->right));
+    }
+
     //
     // call function
     //
@@ -85,6 +91,45 @@ Object* Evaluator::eval(AST::Base* ast) {
         GC::unbind(arg);
 
       return result;
+    }
+
+    //
+    // new
+    //
+    case ASTKind::New: {
+      auto x = ast->as<AST::CallFunc>();
+
+      auto S = this->findStruct(x->getName());
+
+      if( !S ) {
+        Error(x->token)
+          .setMessage("struct '" + x->getName() + "' is not defined")
+          .emit()
+          .exit();
+      }
+
+      if( S->members.size() != x->arguments.size() ) {
+        Error(x->token)
+          .setMessage("no match member count")
+          .emit()
+          .exit();
+      }
+
+      auto obj = new Vector();
+
+      for( auto it = S->members.begin(); auto&& arg : x->arguments ) {
+        auto init = arg->as<AST::Expr>();
+
+        if( (*it++)->str != init->left->token->str )
+          Error(init)
+            .setMessage("expected initializer for member '" + std::string((*it)->str) + "'")
+            .emit()
+            .exit();
+
+        obj->append(this->eval(arg->as<AST::Expr>()->right));
+      }
+
+      return obj;
     }
 
     //
@@ -457,6 +502,15 @@ std::tuple<AST::Function const*, builtin::BuiltinFunc const*> Evaluator::findFun
   }
 
   return { nullptr, nullptr };
+}
+
+AST::Struct const* Evaluator::findStruct(std::string_view name) {
+  for( auto&& ast : this->rootScope->list ) {
+    if( ast->kind == ASTKind::Struct && ast->as<AST::Struct>()->name == name )
+      return ast->as<AST::Struct>();
+  }
+
+  return nullptr;
 }
 
 } // namespace metro

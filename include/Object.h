@@ -166,6 +166,10 @@ struct _Primitive<char16_t, Type::Char> : Object {
   }
 };
 
+//
+// Vector
+//  --> vector, struct
+//
 struct Vector : Object {
   std::vector<Object*> elements;
 
@@ -210,6 +214,12 @@ struct Vector : Object {
     return true;
   }
 
+  /*
+   * getMember():
+   *   find the member with name
+   *   only can use in Type::Struct
+   */
+  Object** getMember(std::string const& name);
   Vector(std::vector<Object*> elements = { })
     : Object(Type::Vector),
       elements(std::move(elements))
@@ -308,6 +318,32 @@ struct Tuple : Object {
   Tuple(std::vector<Object*> elements)
     : Object(Type::Tuple),
       elements(std::move(elements))
+  {
+  }
+};
+
+struct Pair : Object {
+  Object* first;
+  Object* second;
+
+  std::string to_string() const {
+    return first->to_string() + ": " + second->to_string();
+  }
+
+  Pair* clone() const {
+    return new Pair(this->first->clone(), this->second->clone());
+  }
+
+  bool equals(Pair* pair) const {
+    return
+      this->first->equals(pair->first)
+      && this->second->equals(pair->second);
+  }
+
+  Pair(Object* first, Object* second)
+    : Object(Type::Pair),
+      first(first),
+      second(second)
   {
   }
 };
