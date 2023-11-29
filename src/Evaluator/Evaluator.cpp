@@ -48,7 +48,7 @@ Object* Evaluator::eval(AST::Base* ast) {
           .emit()
           .exit();
 
-      return pvar->clone();
+      return pvar;
     }
 
     case ASTKind::Array: {
@@ -79,18 +79,7 @@ Object* Evaluator::eval(AST::Base* ast) {
     // call function
     //
     case ASTKind::CallFunc: {
-      auto cf = ast->as<AST::CallFunc>();
-      std::vector<Object*> args;
-
-      for( auto&& arg : cf->arguments )
-        GC::bind(args.emplace_back(this->eval(arg)));
-
-      auto result = this->evalCallFunc(cf, nullptr, args);
-
-      for( auto&& arg : args )
-        GC::unbind(arg);
-
-      return result;
+      return this->evalCallFunc(ast->as<AST::CallFunc>(), nullptr);
     }
 
     //
@@ -153,6 +142,8 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto obj = this->eval(x->left);
       std::string name;
 
+      //
+      // member variable
       if( x->right->kind == ASTKind::Variable ) {
         auto member = x->right->as<AST::Variable>();
         name = member->getName();
@@ -184,18 +175,14 @@ Object* Evaluator::eval(AST::Base* ast) {
           }
         }
       }
+
+      //
+      // call member function
       else if( x->right->kind == ASTKind::CallFunc ) {
-        alert;
-
-      }
-      else {
-        throw;
+        return this->evalCallFunc(x->right->as<AST::CallFunc>(), obj);
       }
 
-      Error(x->right)
-        .setMessage("object of type '" + obj->type.toString() + "' don't have a member '" + name + "'")
-        .emit()
-        .exit();
+      Error(x->right).setMessage("invalid syntax").emit().exit();
     }
 
     //
@@ -292,18 +279,14 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto assign = ast->as<AST::Expr>();
 
       auto value = this->eval(assign->right);
-
-      if( assign->left->kind == ASTKind::Variable ) {
-        auto& storage = this->getCurrentStorage();
-        auto name = assign->left->as<AST::Variable>()->getName();
-
-        if( !storage.contains(name) )
-          GC::bind(value);
-        else
-          GC::unbind(storage[name]);
+      auto& dest = this->evalAsLeft(assign->left);
+ 
+      if( dest != value ) {
+        GC::unbind(dest);
+        GC::bind(value);
       }
 
-      return this->evalAsLeft(assign->left) = value;
+      return dest = value;
     }
 
     //
@@ -392,24 +375,70 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
     .exit();
 }
 
-Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Object*>& args) {
+//
+//  === evalCallFunc ===
+//
+Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self) {
 
   auto [userdef, builtin] = this->findFunction(ast->getName(), self);
-  auto name = std::string(ast->getName());
+  auto const& name = ast->getName();
+
+  Object* result = nullptr;
+
+  std::vector<Object*> args;
 
   if( self ) {
-    args.insert(args.begin(), self);
+    GC::bind(args.emplace_back(self));
   }
 
+  for( auto&& arg : ast->arguments )
+    GC::bind(args.emplace_back(this->eval(arg)));
+
+  //
+  // ビルトイン
   if( builtin ) {
-    return builtin->call(ast, args);
+    result = builtin->call(ast, args);
   }
 
-  if( !userdef ) {
+  //
+  // ユーザー定義
+  else if( userdef ) {
+    // 引数の数が不一致
+    if( userdef->arguments.size() != args.size() ) {
+      auto err = Error(ast->token);
+
+      if( userdef->arguments.size() < args.size() )
+        err.setMessage("too many arguments");
+      else
+        err.setMessage("too few arguments");
+
+      err.emit().exit();
+    }
+
+    auto& stack = this->push_stack(userdef);
+
+    for( auto it = args.begin(); auto&& arg : userdef->arguments )
+      GC::bind(stack.storage[arg->str] = *it++);
+
+    this->eval(userdef->scope);
+
+    result = stack.result;
+
+    if( !result )
+      result = None::getNone();
+
+    this->pop_stack();
+  }
+
+  //
+  // ビルトイン、ユーザー定義関数 どっちもない
+  //   => エラー
+  else {
     auto error = Error(ast->token);
 
     if( self )
-      error.setMessage("object of type '" + self->type.toString() + "' is not have member function '" + name + "'");
+      error.setMessage("object of type '"
+        + self->type.toString() + "' is not have member function '" + name + "'");
     else
       error.setMessage("undefined function name '" + name + "'");
 
@@ -418,31 +447,10 @@ Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Ob
       .exit();
   }
 
-  if( userdef->arguments.size() != args.size() ) {
-    auto err = Error(ast->token);
+  for( auto&& arg : args )
+    GC::unbind(arg);
 
-    if( userdef->arguments.size() < args.size() ) {
-      err.setMessage("too many arguments");
-    }
-    else {
-      err.setMessage("too few arguments");
-    }
-
-    err.emit().exit();
-  }
-
-  auto& stack = this->push_stack(userdef);
-
-  for( auto it = args.begin(); auto&& arg : userdef->arguments )
-    stack.storage[arg->str] = *it++;
-
-  this->eval(userdef->scope);
-
-  auto result = stack.result;
-
-  this->pop_stack();
-
-  return result ? result : None::getNone();
+  return result;
 }
 
 Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
@@ -478,6 +486,9 @@ Evaluator::Storage& Evaluator::getCurrentStorage() {
   return this->globalStorage;
 }
 
+//
+//  -- findVariable --
+//
 Object** Evaluator::findVariable(std::string_view name, bool allowCreate) {
   auto& storage = this->getCurrentStorage();
 
@@ -487,9 +498,8 @@ Object** Evaluator::findVariable(std::string_view name, bool allowCreate) {
   return &storage[name];
 }
 
-
 //
-// -- findFunction() --
+//  -- findFunction --
 //
 std::tuple<AST::Function const*, builtin::BuiltinFunc const*> Evaluator::findFunction(std::string_view name, Object* self) {
 

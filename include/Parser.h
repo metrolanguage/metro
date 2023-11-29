@@ -34,10 +34,15 @@ private:
   Token* next();
   
   bool eat(std::string_view);
+  bool found(std::string_view);
   Token* expect(std::string_view);
 
   Token* expectIdentifier();
   AST::Scope* expectScope();
+
+  AST::Enum* parse_enum();
+  AST::Struct* parse_struct();
+  AST::Function* parse_function();
 
   AST::Variable* newVariable(std::string const& name);
   AST::Expr* newAssign(AST::Base* dest, AST::Base* src);

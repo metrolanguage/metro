@@ -6,6 +6,7 @@
 
   ----------------------------*/
 
+#include <cassert>
 #include <map>
 #include <thread>
 #include <mutex>
@@ -16,9 +17,13 @@
 #include "Metro.h"
 #include "GC.h"
 
-//  The maximum count of object in memory.
+//  first maximum count of object in memory.
 //  Collect all objects when overed this count.
-#define OBJECT_MEMORY_MAXIMUM   (1 << 14)
+#define OBJECT_MEMORY_MAXIMUM   1000
+
+// Collect したあともヒープがいっぱいの場合、ヒープサイズを SIZE = SIZE * N の計算で増やします。
+// これは、その式における N の数です。
+#define HEAP_SIZE_EXTEND_COEFFICIENT  2
 
 #define LOCK(...)  { std::lock_guard __lock(mtx); { __VA_ARGS__ } }
 
@@ -28,15 +33,17 @@ using namespace objects;
 
 namespace {
 
+size_t Heap_MaximumSize = OBJECT_MEMORY_MAXIMUM;
+
 bool _isEnabled;
 bool _isBusy;
+bool _isKilled;
 std::mutex mtx;
 std::thread* thread;
 size_t mark_count;
 
-std::vector<Object*> _Memory;
-std::vector<Object*> _MemorySub;
-std::vector<Object*> root; /* binded objects for local-v */
+static std::vector<Object*> _Memory;
+static std::vector<Object*> _Root;
 
 Object* mAppend(Object* object) {
   std::lock_guard Lock(mtx);
@@ -49,18 +56,27 @@ Object* mAppend(Object* object) {
   return _Memory.emplace_back(object);
 }
 
+void _ExtendHeap() {
+  Heap_MaximumSize *= HEAP_SIZE_EXTEND_COEFFICIENT;
+}
+
 void _Bind(Object* object) {
-  if( std::find(root.cbegin(), root.cend(), object) == root.cend() ) {
+  object->refCount++;
+
+  if( std::find(_Root.cbegin(), _Root.cend(), object) == _Root.cend() ) {
     LOCK(
-      root.emplace_back(object);
+      _Root.emplace_back(object);
     )
   }
 }
 
 void _Unbind(Object* object) {
-  if( auto it = std::find(root.cbegin(), root.cend(), object); it != root.cend() ) {
+  if( --object->refCount != 0 )
+    return;
+
+  if( auto it = std::find(_Root.cbegin(), _Root.cend(), object); it != _Root.cend() ) {
     LOCK(
-      root.erase(it);
+      _Root.erase(it);
     )
   }
 }
@@ -70,7 +86,16 @@ void _Mark(Object* object) {
   mark_count++;
 
   switch( object->type.kind ) {
-    case Type::Vector: {
+    case Type::String: {
+      for( auto&& c : object->as<String>()->value )
+        _Mark(c);
+
+      break;
+    }
+
+    case Type::Vector:
+    case Type::Struct:
+    {
       auto vec = object->as<Vector>();
 
       for( auto&& e : vec->elements )
@@ -89,33 +114,70 @@ void _Mark(Object* object) {
 
       break;
     }
+
+    case Type::Tuple: {
+      auto tu = object->as<Tuple>();
+
+      for( auto&& e : tu->elements )
+        _Mark(e);
+
+      break;
+    }
+
+    case Type::Pair: {
+      auto x = object->as<Pair>();
+
+      _Mark(x->first);
+      _Mark(x->second);
+
+      break;
+    }
   }
 }
 
 void _MarkAll() {
   mark_count = 0;
 
-  for( auto&& r : root )
+  for( auto&& r : _Root )
     _Mark(r);
-
-  if( mark_count >= OBJECT_MEMORY_MAXIMUM ) {
-    Metro::getInstance()->fatalError("metro: out of memory.\n");
-  }
 }
 
 void _CollectThreadFunc() {
+  alertmsg("GC: start");
+
   _MarkAll();
 
+  // 収集できる余地がない場合、ヒープサイズを増やして中断する。
+  if( mark_count >= Heap_MaximumSize ) {
+    _ExtendHeap();
+
+    LOCK(
+      for( auto&& obj : _Memory )
+        obj->isMarked = false;
+    )
+
+    thread->detach();
+    delete thread;
+
+    thread = nullptr;
+    
+    _isBusy = false;
+
+    alertmsg("GC: end (heap extended to " << Heap_MaximumSize << ")");
+    return;
+  }
+
+  std::vector<Object*> NewHeap;
+
   LOCK(
-    _MemorySub = _Memory;
-    _Memory.clear();
+    NewHeap = std::move(_Memory);
   )
 
-  for( auto it = _MemorySub.begin(); it != _MemorySub.end(); ) {
-    if( *it && !(*it)->noDelete && !(*it)->isMarked ) {
+  for( auto it = NewHeap.begin(); it != NewHeap.end(); ) {
+    if( *it && (*it)->refCount == 0 && !(*it)->noDelete && !(*it)->isMarked ) {
       delete *it;
 
-      _MemorySub.erase(it);
+      NewHeap.erase(it);
 
       continue;
     }
@@ -126,13 +188,19 @@ void _CollectThreadFunc() {
 
   LOCK(
     for( auto&& obj : _Memory ) {
-      _MemorySub.emplace_back(obj);
+      NewHeap.emplace_back(obj);
     }
 
-    _Memory = std::move(_MemorySub);
+    _Memory = std::move(NewHeap);
   )
 
+  debug(LOCK(
+    for(auto&&x:_Memory)assert(x!=nullptr);
+  ))
+
   _isBusy = false;
+
+  alertmsg("GC: end");
 }
 
 void _Collect() {
@@ -145,10 +213,10 @@ void _Collect() {
     delete thread;
   }
 
-
   _isBusy = true;
-  thread = new std::thread(_CollectThreadFunc);
+  _isKilled = false;
 
+  thread = new std::thread(_CollectThreadFunc);
 }
 
 } // unonymous
@@ -156,8 +224,7 @@ void _Collect() {
 void initialize() {
   _isEnabled = true;
 
-  _Memory.reserve(OBJECT_MEMORY_MAXIMUM);
-  _MemorySub.reserve(OBJECT_MEMORY_MAXIMUM);
+  _Memory.reserve(Heap_MaximumSize);
 }
 
 bool isEnabled() {
@@ -168,7 +235,7 @@ Object* _registerObject(Object* object) {
   if( !isEnabled() )
     return object;
 
-  if( _Memory.size() >= OBJECT_MEMORY_MAXIMUM ) {
+  if( _Memory.size() >= Heap_MaximumSize ) {
     _Collect();
   }
 
@@ -176,6 +243,9 @@ Object* _registerObject(Object* object) {
 }
 
 void bind(Object* obj) {
+  if( !obj )
+    return;
+
   if( !isEnabled() )
     return;
 
@@ -183,6 +253,9 @@ void bind(Object* obj) {
 }
 
 void unbind(Object* obj) {
+  if( !obj )
+    return;
+
   if( !isEnabled() )
     return;
 
@@ -212,7 +285,7 @@ void exitGC() {
   }
 
   _Memory.clear();
-  root.clear();
+  _Root.clear();
 }
 
 } // namespace metro::GC

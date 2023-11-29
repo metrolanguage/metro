@@ -69,7 +69,10 @@ private:
 
   Object*& evalIndexRef(AST::Expr* ast, Object* obj, Object* index);
 
-  Object* evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Object*>& args);
+  //
+  //
+  //
+  Object* evalCallFunc(AST::CallFunc* ast, Object* self);
 
   CallStack& push_stack(AST::Function const* func);
   void pop_stack();
@@ -85,20 +88,16 @@ private:
   Object** findVariable(std::string_view name, bool allowCreate = true);
 
 
-  /*
-    -- findFunction() --
-
-    about:
-      Find the function just matching same name.
-      
-   */
+  //
+  //  findFunction():
+  //    Find the function just matching same name.
+  //
   std::tuple<AST::Function const*, builtin::BuiltinFunc const*> findFunction(std::string_view name, Object* self);
 
-  /*
-    -- findStruct() --
-   */
+  //
+  //  -- findStruct() --
+  //
   AST::Struct const* findStruct(std::string_view name);
-
 
   AST::Scope* rootScope;
 

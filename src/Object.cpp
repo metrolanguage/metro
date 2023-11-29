@@ -27,21 +27,20 @@ debug(
 Object::Object(Type type)
   : type(std::move(type)),
     isMarked(false),
-    noDelete(false)
+    noDelete(false),
+    refCount(0)
 {
   GC::_registerObject(this);
 
   debug(
-    if( GC::isEnabled() )
-      __dbg_map[this] = 1;
+    if( GC::isEnabled() ) __dbg_map[this] = 1;
   )
 }
 
 Object::~Object()
 {
   debug(
-    if( GC::isEnabled() )
-      __dbg_map[this] = 0;
+    if( GC::isEnabled() ) __dbg_map[this] = 0;
   )
 }
 

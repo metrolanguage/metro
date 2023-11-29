@@ -703,6 +703,7 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
     nullptr, // value
     nullptr, // variable
     nullptr, // callfunc
+    nullptr, // new
 
     nullptr, // array
     nullptr, // tuple
@@ -734,14 +735,8 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   auto lhs = this->eval(expr->left);
   auto rhs = this->eval(expr->right);
 
-  GC::bind(lhs);
-  GC::bind(rhs);
-
   auto result =
     operator_labels[static_cast<int>(expr->kind)](expr, lhs, rhs);
-
-  GC::unbind(lhs);
-  GC::unbind(rhs);
 
   if( !result ) {
     Error(expr->token)

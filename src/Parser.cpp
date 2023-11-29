@@ -22,9 +22,7 @@ AST::Base* Parser::parse() {
   auto ast = new AST::Scope(nullptr);
 
   while( this->check() ) {
-    //
     // import
-    //
     if( this->eat("import") ) {
       std::string path;
       AST::Base* read = nullptr;
@@ -55,86 +53,34 @@ AST::Base* Parser::parse() {
 
       for( auto&& e : read->as<AST::Scope>()->list )
         ast->list.emplace_back(e);
-
-      continue;
     }
 
-    //
     // enum
-    // 
-    if( this->eat("enum") ) {
-      auto x = new AST::Enum(this->ate, this->expectIdentifier());
-
-      this->expect("{");
-
-      if( this->eat("}") ) {
-        Error(x->token)
-          .setMessage("enum cannot be empty")
-          .emit()
-          .exit();
-      }
-
-      do {
-        x->enumerators.emplace_back(this->expectIdentifier());
-      } while( this->eat(",") );
-
-      this->expect("}");
-
-      ast->list.emplace_back(x);
-      continue;
+    else if( this->found("enum") ) {
+      ast->list.emplace_back(this->parse_enum());
     }
 
-    //
     // struct
-    //
-    if( this->eat("struct") ) {
-      auto x = new AST::Struct(this->ate, this->expectIdentifier());
-
-      this->expect("{");
-
-      if( this->eat("}") ) {
-        Error(x->token)
-          .setMessage("struct cannot be empty")
-          .emit()
-          .exit();
-      }
-
-      do {
-        x->members.emplace_back(this->expectIdentifier());
-      } while( this->eat(",") );
-
-      this->expect("}");
-
-      ast->list.emplace_back(x);
-      continue;
+    else if( this->found("struct") ) {
+      ast->list.emplace_back(this->parse_struct());
     }
 
-    //
     // function definition
-    //
-    if( this->eat("def") ) {
-      auto func = new AST::Function(this->ate);
-
-      func->name_token = this->expectIdentifier();
-      
-      this->expect("(");
-
-      if( !this->eat(")") ) {
-        do {
-          func->arguments.emplace_back(this->expectIdentifier());
-        } while( this->eat(",") );
-
-        this->expect(")");
-      }
-
-      func->scope = this->expectScope();
-
-      ast->list.emplace_back(func);
-
-      continue;
+    else if( this->found("def") ) {
+      ast->list.emplace_back(this->parse_function());
     }
 
-    ast->list.emplace_back(this->stmt());
+    // impl
+    else if( this->eat("impl") ) {
+
+      todo_impl;
+
+    }
+
+    // expr
+    else {
+      ast->list.emplace_back(this->stmt());
+    }
   }
 
   return ast;
@@ -600,11 +546,15 @@ Token* Parser::next() {
 
 bool Parser::eat(std::string_view s) {
   if( this->token->str == s ) {
-    this->next();
+    this->ate = this->next();
     return true;
   }
 
   return false;
+}
+
+bool Parser::found(std::string_view s) {
+  return this->token->str == s;
 }
 
 Token* Parser::expect(std::string_view s) {
@@ -650,6 +600,70 @@ AST::Scope* Parser::expectScope() {
   }
 
   return ast;
+}
+
+AST::Enum* Parser::parse_enum() {
+  auto tok = this->expect("enum");
+  auto x = new AST::Enum(tok, this->expectIdentifier());
+
+  this->expect("{");
+
+  if( this->eat("}") ) {
+    Error(x->token)
+      .setMessage("enum cannot be empty")
+      .emit()
+      .exit();
+  }
+
+  do {
+    x->append(this->expectIdentifier());
+  } while( this->eat(",") );
+
+  this->expect("}");
+
+  return x;
+}
+
+AST::Struct* Parser::parse_struct() {
+  auto tok = this->expect("struct");
+  auto x = new AST::Struct(tok, this->expectIdentifier());
+
+  this->expect("{");
+
+  if( this->eat("}") ) {
+    Error(x->token)
+      .setMessage("struct cannot be empty")
+      .emit()
+      .exit();
+  }
+
+  do {
+    x->append(this->expectIdentifier());
+  } while( this->eat(",") );
+
+  this->expect("}");
+
+  return x;
+}
+
+AST::Function* Parser::parse_function() {
+  auto func = new AST::Function(this->expect("def"));
+
+  func->name_token = this->expectIdentifier();
+  
+  this->expect("(");
+
+  if( !this->eat(")") ) {
+    do {
+      func->arguments.emplace_back(this->expectIdentifier());
+    } while( this->eat(",") );
+
+    this->expect(")");
+  }
+
+  func->scope = this->expectScope();
+
+  return func;
 }
 
 } // namespace metro

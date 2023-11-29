@@ -21,6 +21,7 @@ struct Object {
   Type type;
   bool isMarked;
   bool noDelete;
+  size_t refCount;
 
   template <class T>
   T* as() const {

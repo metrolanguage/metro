@@ -8,9 +8,14 @@
 #include "BuiltinFunc.h"
 #include "Error.h"
 
-#define DEF(Name)       static Object* Name(AST::CallFunc* ast, std::vector<Object*>& args)
+#define DEF(Name)   \
+  static Object* Name(AST::CallFunc const* ast, std::vector<Object*> const& args)
+
 #define PASS(Name)      Name(ast, args)
-#define BUILTIN(Name)   BuiltinFunc(#Name, Name)
+#define BUILTIN(Name)   BuiltinFunc(#Name, Name, false, { })
+
+#define BUILTIN_MEMBER(Name, Type) \
+  BuiltinFunc(#Name, Name, true, Type)
 
 #define MATCH(e...)     isMatch(args, e)
 
@@ -63,8 +68,12 @@ DEF( print ) {
 DEF( println ) {
   (void)ast;
 
-  args.emplace_back(new Char('\n'));
-  return PASS(print);
+  auto ret = PASS(print);
+
+  ret->as<Int>()->value++;
+  std::cout << std::endl;
+
+  return ret;
 }
 
 //
@@ -110,7 +119,7 @@ DEF( vector ) {
     return vec;
   }
 
-  // count, object
+  // count, any
   else if( MATCH(Type::USize, Type::Any) ) {
     auto vec = new Vector;
 
@@ -123,17 +132,28 @@ DEF( vector ) {
   ILLEGAL;
 }
 
+//
+// append
+//
+DEF( append ) {
+
+  // vector, any
+  if( MATCH(Type::Vector, Type::Any) ) {
+    args[0]->as<Vector>()->append(args[1]);
+    return args[0];
+  }
+
+  ILLEGAL;
+}
+
 static std::vector<BuiltinFunc> const _all_functions {
   BUILTIN(print),
   BUILTIN(println),
   BUILTIN(random),
   BUILTIN(vector),
+  BUILTIN_MEMBER(append, Type::Vector),
 
 };
-
-Object* BuiltinFunc::call(AST::CallFunc* ast, std::vector<Object*>& args) const {
-  return this->impl(ast, args);
-}
 
 BuiltinFunc const* BuiltinFunc::find(std::string const& name) {
   for( auto&& func : _all_functions )

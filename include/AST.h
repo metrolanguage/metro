@@ -120,9 +120,9 @@ struct WithName : Base {
   {
   }
 
-  WithName(ASTKind kind, Token* token, Token* nameToken = nullptr)
+  WithName(ASTKind kind, Token* token, Token* nameToken)
     : Base(kind, token),
-      name(nameToken ? nameToken->str : token->str),
+      name(nameToken->str),
       nameToken(nameToken)
   {
   }
@@ -147,7 +147,7 @@ struct Variable : WithName {
   using WithName::WithName;
   
   Variable(Token* token)
-    : WithName(ASTKind::Variable, token)
+    : WithName(ASTKind::Variable, token, token)
   {
   }
 };
@@ -173,7 +173,7 @@ struct CallFunc : WithName {
   std::vector<Base*> arguments;
 
   CallFunc(Token* token, std::vector<Base*> arguments = { })
-    : WithName(ASTKind::CallFunc, token),
+    : WithName(ASTKind::CallFunc, token, token),
       arguments(std::move(arguments))
   {
   }
@@ -321,6 +321,8 @@ struct Function : Base {
   Token* name_token;
   std::vector<Token*> arguments;
   Scope* scope;
+  bool haveSelf;
+  Type selfType;
 
   std::string_view getName() const {
     return this->name_token->str;
@@ -329,7 +331,8 @@ struct Function : Base {
   Function(Token* token)
     : Base(ASTKind::Function, token),
       name_token(nullptr),
-      scope(nullptr)
+      scope(nullptr),
+      haveSelf(false)
   {
   }
 
