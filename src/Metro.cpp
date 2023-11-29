@@ -8,7 +8,6 @@
 
 #include "Lexer.h"
 #include "Parser.h"
-#include "Checker.h"
 #include "Evaluator.h"
 #include "GC.h"
 
@@ -107,13 +106,7 @@ void Metro::evaluateScript(Metro::ScriptInfo& script) {
 
   Error::check();
 
-  Checker checker{ script.ast->as<AST::Scope>() };
-
-  checker.check(script.ast);
-
-  Error::check();
-
-  Evaluator eval;
+  Evaluator eval{ script.ast->as<AST::Scope>() };
 
   eval.eval(script.ast);
 

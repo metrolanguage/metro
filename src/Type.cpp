@@ -1,4 +1,5 @@
 #include "Type.h"
+#include "AST.h"
 
 namespace metro {
 
@@ -13,13 +14,26 @@ static char const* names[] {
   "vector",
   "dict",
   "tuple",
-  "range"
+  "range",
+  "",
+  "",
+  "args",
+  "any",
 };
 
 bool Type::equals(Type const& type) const {
-  if( this->kind != type.kind ) {
+  if( this->kind == Type::Any || type.kind == Type::Any )
+    return true;
+
+  if( this->kind != type.kind )
     return false;
-  }
+
+  if( this->kind == Type::Struct && this->astStruct != type.astStruct )
+    return false;
+
+  if( this->kind == Type::Enumerator
+    && (this->astEnum != type.astEnum || this->enumeratorIndex != type.enumeratorIndex) )
+    return false;
 
   if( this->params.size() != type.params.size() )
     return false;
@@ -34,6 +48,16 @@ bool Type::equals(Type const& type) const {
 }
 
 std::string Type::toString() const {
+  switch( this->kind ) {
+    case Type::Enumerator:
+      return
+        this->astEnum->getName()
+          + "." + std::string(this->astEnum->enumerators[this->enumeratorIndex]->str );
+
+    case Type::Struct:
+      return this->astStruct->getName();
+  }
+
   std::string ret = names[static_cast<int>(this->kind)];
 
   if( !this->params.empty() ) {

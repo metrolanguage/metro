@@ -12,20 +12,21 @@ namespace metro::builtin {
 
 struct BuiltinFunc {
   using Object = objects::Object;
-  using FuncPointer = std::function<Object*(AST::CallFunc*, std::vector<Object*>)>;
+  using FuncPointer = std::function<Object*(AST::CallFunc*, std::vector<Object*>&)>;
 
   std::string   name;
-  int           arg_count; // -1 = free args
+  bool          have_self;
+  Type          self_type;
   FuncPointer   impl;
 
-  Object* call(AST::CallFunc* ast, std::vector<Object*> args) const;
+  Object* call(AST::CallFunc* ast, std::vector<Object*>& args) const;
 
   static BuiltinFunc const* find(std::string const& name);
   static std::vector<BuiltinFunc> const& getAllFunctions();
 
-  BuiltinFunc(std::string const& name, int arg_count, FuncPointer impl)
+  BuiltinFunc(std::string const& name, FuncPointer impl)
     : name(name),
-      arg_count(arg_count),
+      have_self(false),
       impl(impl)
   {
   }

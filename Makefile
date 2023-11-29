@@ -7,8 +7,8 @@ INCLUDE		:= 	include
 SOURCE		:= 	src \
 				src/Evaluator
 
-CC			:=	clang
-CXX			:=	clang++
+CC			:=	gcc
+CXX			:=	g++
 
 OPTI		?=	-O0 -g -D_METRO_DEBUG_
 COMMON		:=	$(OPTI) -Wall -Wextra -Wno-switch $(INCLUDES)
@@ -40,7 +40,7 @@ all: $(BUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(TOPDIR)/Makefile
 
 release: $(BUILD)
-	@$(MAKE) --no-print-directory OUTPUT="$(TOPDIR)/$(TARGET)" OPTI="-O3" \
+	@$(MAKE) --no-print-directory OUTPUT="$(TOPDIR)/$(TARGET)" OPTI="-O8" \
 		LDFLAGS="-Wl,--gc-sections,-s" -C $(BUILD) -f $(TOPDIR)/Makefile
 
 $(BUILD):

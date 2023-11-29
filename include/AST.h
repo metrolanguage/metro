@@ -15,9 +15,11 @@ enum class ASTKind {
   Value,
   Variable,
   CallFunc,
-  
+  New,
+
   Array,
   Tuple,
+  Pair,
 
   // member access
   MemberAccess,
@@ -80,9 +82,7 @@ enum class ASTKind {
   // user-types
   Enum,
   Struct,
-
-  // namespace
-  Namespace,
+  Class,
 
   /* "import" be processed immediately in parsing. */
 
@@ -107,6 +107,7 @@ protected:
 
 struct WithName : Base {
   std::string name;
+  Token* nameToken;
 
   std::string const& getName() const {
     return this->name;
@@ -114,14 +115,15 @@ struct WithName : Base {
 
   WithName(ASTKind kind, std::string const& name)
     : Base(kind, nullptr),
-      name(name)
+      name(name),
+      nameToken(nullptr)
   {
   }
 
-protected:
-  WithName(ASTKind k, Token* t = nullptr)
-    : Base(k, t),
-      name(t ? t->str : "")
+  WithName(ASTKind kind, Token* token, Token* nameToken = nullptr)
+    : Base(kind, token),
+      name(nameToken ? nameToken->str : token->str),
+      nameToken(nameToken)
   {
   }
 };
@@ -133,6 +135,7 @@ struct Value : Base {
     : Base(ASTKind::Value, token),
       object(object)
   {
+    this->object->noDelete = true;
   }
 
   ~Value()
@@ -166,21 +169,12 @@ struct Array : Base {
 };
 
 struct Function;
-struct CallFunc : Base {
+struct CallFunc : WithName {
   std::vector<Base*> arguments;
 
-  Function const* userdef;              // if user-defined
-  builtin::BuiltinFunc const* builtin;  // if builtin
-
-  std::string_view getName() const {
-    return this->token->str;
-  }
-
   CallFunc(Token* token, std::vector<Base*> arguments = { })
-    : Base(ASTKind::CallFunc, token),
-      arguments(std::move(arguments)),
-      userdef(nullptr),
-      builtin(nullptr)
+    : WithName(ASTKind::CallFunc, token),
+      arguments(std::move(arguments))
   {
   }
 
@@ -345,15 +339,43 @@ struct Function : Base {
   }
 };
 
-struct Enum : Base {
-  struct Enumerator {
 
-  };
+//
+// --> for enum, struct
+//
+struct IdentifierList : WithName {
+  Token*& append(Token* token) {
+    return this->_idents.emplace_back(token);
+  }
 
-  Token* name_token;
+protected:
+  IdentifierList(ASTKind kind, Token* token, Token* nametok)
+    : WithName(kind, token, nametok)
+  {
+  }
 
+  std::vector<Token*> _idents;
 };
 
+struct Enum : IdentifierList {
+  std::vector<Token*>& enumerators;
+
+  Enum(Token* token, Token* nametok)
+    : IdentifierList(ASTKind::Enum, token, nametok),
+      enumerators(this->_idents)
+  {
+  }
+};
+
+struct Struct : IdentifierList {
+  std::vector<Token*>& members;
+
+  Struct(Token* token, Token* nametok)
+    : IdentifierList(ASTKind::Struct, token, nametok),
+      members(this->_idents)
+  {
+  }
+};
 
 
 } // namespace AST

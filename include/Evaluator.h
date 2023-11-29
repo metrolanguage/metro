@@ -39,7 +39,7 @@ class Evaluator {
 
 public:
 
-  Evaluator();
+  Evaluator(AST::Scope* rootScope);
 
   /*
    * The core function.
@@ -69,40 +69,41 @@ private:
 
   Object*& evalIndexRef(AST::Expr* ast, Object* obj, Object* index);
 
+  Object* evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Object*>& args);
+
   CallStack& push_stack(AST::Function const* func);
   void pop_stack();
 
-  ScopeEvaluationFlags& getCurrentScope() {
-    return *this->_scope;
-  }
+  ScopeEvaluationFlags& getCurrentScope();
 
-  bool inFunction() const {
-    return !this->callStacks.empty();
-  }
+  bool inFunction() const;
 
-  CallStack& getCurrentCallStack() {
-    return *callStacks.rbegin();
-  }
+  CallStack& getCurrentCallStack() ;
 
-  Storage& getCurrentStorage() {
-    if( this->inFunction() )
-      return this->getCurrentCallStack().storage;
+  Storage& getCurrentStorage();
 
-    return this->globalStorage;
-  }
+  Object** findVariable(std::string_view name, bool allowCreate = true);
 
-  Object** findVariable(std::string_view name, bool allowCreate = true) {
-    auto& storage = this->getCurrentStorage();
 
-    if( !storage.contains(name) && !allowCreate )
-      return nullptr;
+  /*
+    -- findFunction() --
 
-    return &storage[name];
-  }
+    about:
+      Find the function just matching same name.
+      
+   */
+  std::tuple<AST::Function const*, builtin::BuiltinFunc const*> findFunction(std::string_view name, Object* self);
+
+  /*
+    -- findStruct() --
+   */
+  AST::Struct const* findStruct(std::string_view name);
+
+
+  AST::Scope* rootScope;
 
   Storage  globalStorage;
   std::vector<CallStack> callStacks;
-
 
   ScopeEvaluationFlags* _loopScope;
   ScopeEvaluationFlags* _funcScope;

@@ -11,8 +11,9 @@ namespace metro {
 
 using namespace objects;
 
-Evaluator::Evaluator()
-  : _loopScope(nullptr),
+Evaluator::Evaluator(AST::Scope* rootScope)
+  : rootScope(rootScope),
+    _loopScope(nullptr),
     _funcScope(nullptr),
     _scope(nullptr)
 {
@@ -25,6 +26,9 @@ Object* Evaluator::eval(AST::Base* ast) {
 
   switch( ast->kind ) {
     case ASTKind::Function:
+    case ASTKind::Enum:
+    case ASTKind::Struct:
+    case ASTKind::Class:
       break;
 
     case ASTKind::Value: {
@@ -52,7 +56,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       for( auto&& e : ast->as<AST::Array>()->elements )
         obj->append(this->eval(e));
-      
+
       return obj;
     }
 
@@ -65,36 +69,70 @@ Object* Evaluator::eval(AST::Base* ast) {
       return obj;
     }
 
+    case ASTKind::Pair: {
+      auto x = ast->as<AST::Expr>();
+
+      return new Pair(this->eval(x->left), this->eval(x->right));
+    }
+
     //
     // call function
     //
     case ASTKind::CallFunc: {
       auto cf = ast->as<AST::CallFunc>();
-
       std::vector<Object*> args;
 
       for( auto&& arg : cf->arguments )
-        args.emplace_back(this->eval(arg));
+        GC::bind(args.emplace_back(this->eval(arg)));
 
-      if( cf->builtin )
-        return cf->builtin->call(cf, std::move(args));
+      auto result = this->evalCallFunc(cf, nullptr, args);
 
-      auto& stack = this->push_stack(cf->userdef);
-
-      for( auto it = args.begin(); auto&& arg : cf->userdef->arguments ) {
-        GC::bind(stack.storage[arg->str] = *it++);
-      }
-
-      this->eval(cf->userdef->scope);
-
-      auto result = stack.result;
-
-      this->pop_stack();
-
-      if( !result )
-        return None::getNone();
+      for( auto&& arg : args )
+        GC::unbind(arg);
 
       return result;
+    }
+
+    //
+    // new
+    //
+    case ASTKind::New: {
+      auto x = ast->as<AST::CallFunc>();
+
+      auto S = this->findStruct(x->getName());
+
+      if( !S ) {
+        Error(x->token)
+          .setMessage("struct '" + x->getName() + "' is not defined")
+          .emit()
+          .exit();
+      }
+
+      if( S->members.size() != x->arguments.size() ) {
+        Error(x->token)
+          .setMessage("no match member count")
+          .emit()
+          .exit();
+      }
+
+      auto obj = new Vector();
+
+      obj->type = Type::Struct;
+      obj->type.astStruct = S;
+
+      for( auto it = S->members.begin(); auto&& arg : x->arguments ) {
+        auto init = arg->as<AST::Expr>();
+
+        if( (*it++)->str != init->left->token->str )
+          Error(init)
+            .setMessage("expected initializer for member '" + std::string((*it)->str) + "'")
+            .emit()
+            .exit();
+
+        obj->append(this->eval(arg->as<AST::Expr>()->right));
+      }
+
+      return obj;
     }
 
     //
@@ -113,29 +151,49 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto x = ast->as<AST::Expr>();
 
       auto obj = this->eval(x->left);
+      std::string name;
 
-      auto member = x->right->as<AST::Variable>();
-      auto name = member->getName();
+      if( x->right->kind == ASTKind::Variable ) {
+        auto member = x->right->as<AST::Variable>();
+        name = member->getName();
 
-      switch( obj->type.kind ) {
-        case Type::Int: {
-          if( name == "abs" )
-            return new Int(std::abs(obj->as<Int>()->value));
+        switch( obj->type.kind ) {
+          case Type::Int: {
+            if( name == "abs" )
+              return new Int(std::abs(obj->as<Int>()->value));
 
-          break;
-        }
+            break;
+          }
 
-        case Type::String: {
-          if( name == "count" )
-            return new USize(obj->as<String>()->value.size());
+          case Type::String: {
+            if( name == "count" )
+              return new USize(obj->as<String>()->value.size());
 
-          break;
+            break;
+          }
+
+          case Type::Struct: {
+            auto S = obj->type.astStruct;
+
+            for( size_t i = 0; i < S->members.size(); i++ ) {
+              if( S->members[i]->str == name )
+                return obj->as<Vector>()->elements[i];
+            }
+
+            break;
+          }
         }
       }
+      else if( x->right->kind == ASTKind::CallFunc ) {
+        alert;
 
-      Error(member)
-        .setMessage("object of type '" + obj->type.toString()
-          + "' don't have a member '" + name + "'")
+      }
+      else {
+        throw;
+      }
+
+      Error(x->right)
+        .setMessage("object of type '" + obj->type.toString() + "' don't have a member '" + name + "'")
         .emit()
         .exit();
     }
@@ -226,7 +284,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       return new Range(begin->as<Int>()->value, end->as<Int>()->value);
     }
-
+ 
     //
     // assign
     //
@@ -334,6 +392,59 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
     .exit();
 }
 
+Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Object*>& args) {
+
+  auto [userdef, builtin] = this->findFunction(ast->getName(), self);
+  auto name = std::string(ast->getName());
+
+  if( self ) {
+    args.insert(args.begin(), self);
+  }
+
+  if( builtin ) {
+    return builtin->call(ast, args);
+  }
+
+  if( !userdef ) {
+    auto error = Error(ast->token);
+
+    if( self )
+      error.setMessage("object of type '" + self->type.toString() + "' is not have member function '" + name + "'");
+    else
+      error.setMessage("undefined function name '" + name + "'");
+
+    error
+      .emit()
+      .exit();
+  }
+
+  if( userdef->arguments.size() != args.size() ) {
+    auto err = Error(ast->token);
+
+    if( userdef->arguments.size() < args.size() ) {
+      err.setMessage("too many arguments");
+    }
+    else {
+      err.setMessage("too few arguments");
+    }
+
+    err.emit().exit();
+  }
+
+  auto& stack = this->push_stack(userdef);
+
+  for( auto it = args.begin(); auto&& arg : userdef->arguments )
+    stack.storage[arg->str] = *it++;
+
+  this->eval(userdef->scope);
+
+  auto result = stack.result;
+
+  this->pop_stack();
+
+  return result ? result : None::getNone();
+}
+
 Evaluator::CallStack& Evaluator::push_stack(AST::Function const* func) {
   return this->callStacks.emplace_back(func);
 }
@@ -346,6 +457,76 @@ void Evaluator::pop_stack() {
   }
 
   this->callStacks.pop_back();
+}
+
+Evaluator::ScopeEvaluationFlags& Evaluator::getCurrentScope() {
+  return *this->_scope;
+}
+
+bool Evaluator::inFunction() const {
+  return !this->callStacks.empty();
+}
+
+Evaluator::CallStack& Evaluator::getCurrentCallStack() {
+  return *callStacks.rbegin();
+}
+
+Evaluator::Storage& Evaluator::getCurrentStorage() {
+  if( this->inFunction() )
+    return this->getCurrentCallStack().storage;
+
+  return this->globalStorage;
+}
+
+Object** Evaluator::findVariable(std::string_view name, bool allowCreate) {
+  auto& storage = this->getCurrentStorage();
+
+  if( !storage.contains(name) && !allowCreate )
+    return nullptr;
+
+  return &storage[name];
+}
+
+
+//
+// -- findFunction() --
+//
+std::tuple<AST::Function const*, builtin::BuiltinFunc const*> Evaluator::findFunction(std::string_view name, Object* self) {
+
+  for( auto&& bf : builtin::BuiltinFunc::getAllFunctions() ) {
+    if( !bf.have_self != !self )
+      continue;
+
+    if( self && !self->type.equals(bf.self_type) )
+      continue;
+
+    if( bf.name == name ) {
+      return { nullptr, &bf };
+    }
+  }
+
+  for( auto&& ast : this->rootScope->list ) {
+    if( ast->kind != ASTKind::Function )
+      continue;
+
+    auto func = ast->as<AST::Function>();
+
+    if( func->getName() == name )
+      return { func, nullptr };
+  }
+
+  return { nullptr, nullptr };
+}
+
+AST::Struct const* Evaluator::findStruct(std::string_view name) {
+  for( auto&& ast : this->rootScope->list ) {
+    alertmsg(ast->token->str);
+
+    if( ast->kind == ASTKind::Struct && ast->as<AST::Struct>()->getName() == name )
+      return ast->as<AST::Struct>();
+  }
+
+  return nullptr;
 }
 
 } // namespace metro

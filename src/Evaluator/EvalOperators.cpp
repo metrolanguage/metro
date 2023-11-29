@@ -237,7 +237,7 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
       switch( rhs->type.kind ) {
         // vector * int
         case Type::Int:
-          rhs = new USize(rhs->as<Int>()->value);
+          return obj_mul(expr, new USize(rhs->as<Int>()->value), lhs);
 
         // vector * usize
         case Type::USize:
@@ -703,8 +703,11 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
     nullptr, // value
     nullptr, // variable
     nullptr, // callfunc
+
     nullptr, // array
     nullptr, // tuple
+    nullptr, // pair
+    
     nullptr, // memberaccess
     nullptr, // indexref
     nullptr, // not

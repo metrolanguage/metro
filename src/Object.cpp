@@ -2,6 +2,7 @@
 #include <map>
 #include "alert.h"
 #include "GC.h"
+#include "AST.h"
 
 namespace metro::objects {
 
@@ -44,13 +45,24 @@ Object::~Object()
   )
 }
 
+bool Object::isNumeric() const {
+  switch( type.kind ) {
+    case Type::Int:
+    case Type::Float:
+    case Type::USize:
+      return true;
+  }
+
+  return false;
+}
+
 bool Object::equals(Object* object) const {
 #define __CASE__(T) \
   case Type::T: return this->as<T>()->equals(object->as<T>());
 
   if( !this->type.equals(object->type) )
     return false;
-  
+
   switch( this->type.kind ) {
     __CASE__(Int)
     __CASE__(Float)
@@ -121,6 +133,70 @@ String* String::append(String* str) {
     this->append(c->clone());
 
   return this;
+}
+
+std::string Vector::to_string() const {
+  if( this->elements.empty() )
+    return "[]";
+  
+  std::string ret;
+
+  auto isStruct = this->type.kind == Type::Struct;
+
+  for( size_t i = 0; i < this->elements.size(); i++ ) {
+    auto& e = this->elements[i];
+
+    if( isStruct )
+      ret += std::string(this->type.astStruct->members[i]->str) + ": ";
+
+    ret += e->to_string();
+
+    if( e != *this->elements.rbegin() )
+      ret += ", ";
+  }
+
+  if( isStruct )
+    return this->type.astStruct->getName() + "{" + ret + "}";
+
+  return '[' + ret + ']';
+}
+
+Vector* Vector::clone() const {
+  auto vec = new Vector();
+
+  vec->type = this->type;
+
+  for( auto&& e : this->elements )
+    vec->append(e->clone());
+
+  return vec;
+}
+
+bool Vector::equals(Vector* vec) const {
+  if( this->elements.size() != vec->elements.size() )
+    return false;
+
+  for( auto it = this->elements.begin(); auto&& e : vec->elements )
+    if( !(*it)->equals(e) )
+      return false;
+
+  return true;
+}
+
+/*
+  * getMember():
+  *   find the member with name
+  *   only can use in Type::Struct
+  */
+Object** Vector::getMember(std::string const& name) {
+  for( size_t i = 0; auto&& m : this->type.astStruct->members ) {
+    if( m->str == name )
+      return &this->elements[i];
+
+    i++;
+  }
+
+  return nullptr;
 }
 
 } // namespace metro::objects

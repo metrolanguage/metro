@@ -25,7 +25,6 @@ Error& Error::emit() {
 
   switch( this->location.kind ) {
     case ErrorLocation::LC_Token: {
-      alert;
       auto tok = (Token*)this->location.loc;
 
       beginPos = tok->position;
@@ -36,8 +35,6 @@ Error& Error::emit() {
     }
 
     case ErrorLocation::LC_AST: {
-      alert;
-
       auto ast = (AST::Base*)this->location.loc;
 
       beginPos = ast->token->position;

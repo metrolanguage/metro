@@ -59,6 +59,55 @@ AST::Base* Parser::parse() {
       continue;
     }
 
+    //
+    // enum
+    // 
+    if( this->eat("enum") ) {
+      auto x = new AST::Enum(this->ate, this->expectIdentifier());
+
+      this->expect("{");
+
+      if( this->eat("}") ) {
+        Error(x->token)
+          .setMessage("enum cannot be empty")
+          .emit()
+          .exit();
+      }
+
+      do {
+        x->enumerators.emplace_back(this->expectIdentifier());
+      } while( this->eat(",") );
+
+      this->expect("}");
+
+      ast->list.emplace_back(x);
+      continue;
+    }
+
+    //
+    // struct
+    //
+    if( this->eat("struct") ) {
+      auto x = new AST::Struct(this->ate, this->expectIdentifier());
+
+      this->expect("{");
+
+      if( this->eat("}") ) {
+        Error(x->token)
+          .setMessage("struct cannot be empty")
+          .emit()
+          .exit();
+      }
+
+      do {
+        x->members.emplace_back(this->expectIdentifier());
+      } while( this->eat(",") );
+
+      this->expect("}");
+
+      ast->list.emplace_back(x);
+      continue;
+    }
 
     //
     // function definition
@@ -137,11 +186,8 @@ AST::Base* Parser::factor() {
   //
   // boolean
   //
-  if( this->eat("true") )
-    return new AST::Value(tok, new objects::Bool(true));
-
-  if( this->eat("false") )
-    return new AST::Value(tok, new objects::Bool(false));
+  if( this->eat("true") )  return new AST::Value(tok, new objects::Bool(true));
+  if( this->eat("false") ) return new AST::Value(tok, new objects::Bool(false));
 
   //
   // immediate
@@ -170,6 +216,8 @@ AST::Base* Parser::factor() {
     case TokenKind::Identifier: {
       this->next();
 
+      //
+      // call func
       if( this->eat("(") ) {
         auto ast = new AST::CallFunc(tok);
         
@@ -206,19 +254,7 @@ AST::Base* Parser::indexref() {
       this->expect("]");
     }
     else if( this->eat(".") ) {
-      auto tok = this->ate;
-
-      auto y = this->factor();
-
-      if( y->kind == ASTKind::CallFunc ) {
-        auto cf = y->as<AST::CallFunc>();
-
-        cf->arguments.insert(cf->arguments.begin(), x);
-        x = cf;
-      }
-      else {
-        x = new AST::Expr(ASTKind::MemberAccess, tok, x, y);
-      }
+      x = new AST::Expr(ASTKind::MemberAccess, this->ate, x, this->factor());
     }
     else
       break;
@@ -237,6 +273,35 @@ AST::Base* Parser::unary() {
 
   if( this->eat("!") )
     return new AST::Expr(ASTKind::Not, this->ate, this->indexref(), nullptr);
+
+  if( this->eat("new") ) {
+    auto ast = new AST::CallFunc(this->ate);
+
+    ast->kind = ASTKind::New;
+    
+    ast->name =
+      (ast->nameToken = this->expectIdentifier())->str;
+
+    this->expect("{");
+
+    if( this->eat("}") ) {
+      Error(this->ate)
+        .setMessage("need at least one member").emit().exit();
+    }
+
+    do {
+      auto name = new AST::Variable(this->expectIdentifier());
+
+      auto colon = this->expect(":");
+      auto val = this->expr();
+
+      ast->arguments.emplace_back(new AST::Expr(ASTKind::Pair, colon, name, val));
+    } while( this->eat(",") );
+
+    this->expect("}");
+
+    return ast;
+  }
 
   return this->indexref();
 }
@@ -310,20 +375,32 @@ AST::Base* Parser::range() {
 }
 
 /*
+ * pair
+ */
+AST::Base* Parser::pair() {
+  auto x = this->range();
+
+  if( this->eat(":") )
+    return new AST::Expr(ASTKind::Pair, this->ate, x, this->range());
+
+  return x;
+}
+
+/*
  * compare
  */
 AST::Base* Parser::compare() {
-  auto x = this->range();
+  auto x = this->pair();
 
   while( this->check() ) {
     if( this->eat(">") )
-      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->range());
+      x = new AST::Expr(ASTKind::Bigger, this->ate, x, this->pair());
     else if( this->eat("<") )
-      x = new AST::Expr(ASTKind::Bigger, this->ate, this->range(), x);
+      x = new AST::Expr(ASTKind::Bigger, this->ate, this->pair(), x);
     else if( this->eat(">=") )
-      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->range());
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, x, this->pair());
     else if( this->eat("<=") )
-      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->range(), x);
+      x = new AST::Expr(ASTKind::BiggerOrEqual, this->ate, this->pair(), x);
     else
       break;
   }
