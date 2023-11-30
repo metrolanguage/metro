@@ -1,0 +1,5 @@
+import sub;
+import folder/aiueo;
+import ../examples/fibonacci;
+
+println("hello from import.metro!");

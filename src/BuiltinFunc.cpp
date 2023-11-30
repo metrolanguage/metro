@@ -112,7 +112,7 @@ DEF( vector ) {
     auto range = args[0]->as<Range>();
     auto vec = new Vector;
 
-    for( auto i = range->begin; i < range->end; i++ ) {
+    for( auto i = range->begin->value; i < range->end->value; i++ ) {
       vec->elements.emplace_back(new Int(i));
     }
 

@@ -80,7 +80,9 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
     case Type::Char:
       switch( rhs->type.kind ) {
         case Type::String: {
-          rhs->as<String>()->value.insert(rhs->as<String>()->value.begin(), lhs->as<Char>()->clone());
+          rhs->as<String>()->characters.insert(
+            rhs->as<String>()->characters.begin(), lhs->as<Char>()->clone());
+
           return rhs;
         }
       }
@@ -203,8 +205,8 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
           auto obj = new String();
 
           for( USize::ValueType i = 0; i < lhs->as<USize>()->value; i++ )
-            for( auto&& c : rhs->as<String>()->value )
-              obj->value.emplace_back(c->clone());
+            for( auto&& c : rhs->as<String>()->characters )
+              obj->characters.emplace_back(c->clone());
 
           return obj;
         }
@@ -741,8 +743,8 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   if( !result ) {
     Error(expr->token)
       .setMessage(
-        "invalid operator: '" + lhs->type.toString() + "' "
-          + std::string(expr->token->str) + " '" + rhs->type.toString() + "'")
+        "invalid operator '" + std::string(expr->token->str)
+        + "' for '" + lhs->type.toString() + "' and '" + rhs->type.toString() + "'")
       .emit()
       .exit();
   }

@@ -58,6 +58,9 @@ Metro::ScriptInfo::~ScriptInfo()
 }
 
 Metro::ScriptInfo* Metro::ScriptInfo::import(std::string const& path) {
+  alertmsg("import: " << this->cwd);
+  alertmsg("import: " << path);
+
   return this->_imported.emplace_back(new ScriptInfo(this->cwd + path));
 }
 

@@ -1,5 +1,3 @@
-import ../test;
-
 def fib(n) {
   if n < 2 {
     return 1;
@@ -11,4 +9,3 @@ def fib(n) {
 for i in 0 .. 11 {
   println(fib(i));
 }
-

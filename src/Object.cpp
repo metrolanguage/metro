@@ -27,8 +27,8 @@ debug(
 Object::Object(Type type)
   : type(std::move(type)),
     isMarked(false),
-    noDelete(false),
-    refCount(0)
+    refCount(0),
+    _isUndead(false)
 {
   GC::_registerObject(this);
 
@@ -42,6 +42,53 @@ Object::~Object()
   debug(
     if( GC::isEnabled() ) __dbg_map[this] = 0;
   )
+}
+
+Object* Object::toUndead() {
+  this->_isUndead = true;
+
+  switch( this->type.kind ) {
+    case Type::String:
+      for( auto&& ch : this->as<String>()->characters )
+        ch->toUndead();
+
+      break;
+
+    case Type::Vector:
+      for( auto&& elem : this->as<Vector>()->elements )
+        elem->toUndead();
+
+      break;
+
+    case Type::Dict:
+      for( auto&& [key, value] : this->as<Dict>()->elements ) {
+        key->toUndead();
+        value->toUndead();
+      }
+
+      break;
+
+    case Type::Tuple:
+      for( auto&& elem : this->as<Tuple>()->elements )
+        elem->toUndead();
+
+      break;
+
+    case Type::Pair: {
+      auto pair = this->as<Pair>();
+
+      pair->first->toUndead();
+      pair->second->toUndead();
+
+      break;
+    }
+
+    case Type::Range: {
+      
+    }
+  }
+
+  return this;
 }
 
 bool Object::isNumeric() const {
@@ -80,24 +127,30 @@ bool Object::equals(Object* object) const {
   return true;
 }
 
+//
+// String::to_string()
+//
 std::string _Primitive<std::u16string, Type::String>::to_string() const {
   std::u16string s;
 
-  for( auto&& c : this->value )
+  for( auto&& c : this->characters )
     s += c->value;
   
   return conv.to_bytes(s);
 }
 
+//
+// String::clone()
+//
 String* _Primitive<std::u16string, Type::String>::clone() const {
-  return new String(this->value);
+  return new String(this->characters);
 }
 
 bool String::equals(String* str) const {
-  if( this->value.size() != str->value.size() )
+  if( this->characters.size() != str->characters.size() )
     return false;
 
-  for( auto it = this->value.begin(); auto&& c : str->value )
+  for( auto it = this->characters.begin(); auto&& c : str->characters )
     if( !(*it++)->equals(c) )
       return false;
 
@@ -108,7 +161,7 @@ _Primitive<std::u16string, Type::String>::_Primitive(std::u16string const& str)
   : Object(Type::String)
 {
   for( auto&& c : str )
-    this->value.emplace_back(new Char(c));
+    this->characters.emplace_back(new Char(c));
 }
 
 _Primitive<std::u16string, Type::String>::_Primitive(std::string const& str)
@@ -116,19 +169,19 @@ _Primitive<std::u16string, Type::String>::_Primitive(std::string const& str)
 {
 }
 
-_Primitive<std::u16string, Type::String>::_Primitive(std::vector<Char*> val)
+_Primitive<std::u16string, Type::String>::_Primitive(std::vector<Char*> characters)
   : Object(Type::String),
-    value(std::move(val))
+    characters(std::move(characters))
 {
 }
 
 String* String::append(Char* ch) {
-  this->value.emplace_back(ch);
+  this->characters.emplace_back(ch);
   return this;
 }
 
 String* String::append(String* str) {
-  for( auto&& c : str->value )
+  for( auto&& c : str->characters )
     this->append(c->clone());
 
   return this;

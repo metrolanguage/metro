@@ -158,7 +158,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
           case Type::String: {
             if( name == "count" )
-              return new USize(obj->as<String>()->value.size());
+              return new USize(obj->as<String>()->characters.size());
 
             break;
           }
@@ -362,7 +362,7 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
 
   switch( obj->type.kind ) {
     case Type::String: {
-      return (Object*&)obj->as<String>()->value[index];
+      return (Object*&)obj->as<String>()->characters[index];
     }
 
     case Type::Vector:

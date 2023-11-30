@@ -20,13 +20,18 @@ using String  = _Primitive<std::u16string, Type::String>;
 struct Object {
   Type type;
   bool isMarked;
-  bool noDelete;
   size_t refCount;
 
   template <class T>
   T* as() const {
     return (T*)this;
   }
+
+  bool isUndead() const {
+    return this->_isUndead;
+  }
+
+  Object* toUndead();
 
   bool isNumeric() const;
   bool equals(Object* object) const;
@@ -38,6 +43,9 @@ struct Object {
 
 protected:
   Object(Type type);
+
+private:
+  bool _isUndead;
 };
 
 struct None : Object {
@@ -116,7 +124,7 @@ struct _Primitive<bool, Type::Bool> : Object {
 
 template <>
 struct _Primitive<std::u16string, Type::String> : Object {
-  std::vector<Char*> value;
+  std::vector<Char*> characters;
 
   std::string to_string() const;
   String* clone() const;
@@ -125,7 +133,7 @@ struct _Primitive<std::u16string, Type::String> : Object {
 
   _Primitive(std::u16string const& str = u"");
   _Primitive(std::string const& str);
-  _Primitive(std::vector<Char*> val);
+  _Primitive(std::vector<Char*> characters);
 
   String* append(Char* ch);
   String* append(String* str);
@@ -312,22 +320,29 @@ struct Pair : Object {
 };
 
 struct Range : Object {
-  int64_t begin;
-  int64_t end;
+  Int* begin;
+  Int* end;
 
   std::string to_string() const {
-    return utils::format("%llu .. %llu", this->begin, this->end);
+    return utils::format("%llu .. %llu", this->begin->value, this->end->value);
   }
 
   Range* clone() const {
-    return new Range(this->begin, this->end);
+    return new Range(this->begin->clone(), this->end->clone());
   }
 
   bool equals(Range* range) const {
-    return this->begin == range->begin && this->end == range->end;
+    return this->begin->equals(range->begin) && this->end->equals(range->end);
   }
 
-  Range(int64_t begin, int64_t end)
+  Range(Int::ValueType begin, Int::ValueType end)
+    : Object(Type::Range),
+      begin(new Int(begin)),
+      end(new Int(end))
+  {
+  }
+
+  Range(Int* begin, Int* end)
     : Object(Type::Range),
       begin(begin),
       end(end)

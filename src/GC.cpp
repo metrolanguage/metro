@@ -87,7 +87,7 @@ void _Mark(Object* object) {
 
   switch( object->type.kind ) {
     case Type::String: {
-      for( auto&& c : object->as<String>()->value )
+      for( auto&& c : object->as<String>()->characters )
         _Mark(c);
 
       break;
@@ -129,6 +129,15 @@ void _Mark(Object* object) {
 
       _Mark(x->first);
       _Mark(x->second);
+
+      break;
+    }
+
+    case Type::Range: {
+      auto range = object->as<Range>();
+
+      _Mark(range->begin);
+      _Mark(range->end);
 
       break;
     }
@@ -174,7 +183,7 @@ void _CollectThreadFunc() {
   )
 
   for( auto it = NewHeap.begin(); it != NewHeap.end(); ) {
-    if( *it && (*it)->refCount == 0 && !(*it)->noDelete && !(*it)->isMarked ) {
+    if( *it && (*it)->refCount == 0 && !(*it)->isUndead() && !(*it)->isMarked ) {
       delete *it;
 
       NewHeap.erase(it);

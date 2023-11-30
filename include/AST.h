@@ -133,9 +133,8 @@ struct Value : Base {
 
   Value(Token* token, objects::Object* object)
     : Base(ASTKind::Value, token),
-      object(object)
+      object(object->toUndead())
   {
-    this->object->noDelete = true;
   }
 
   ~Value()

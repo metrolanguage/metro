@@ -32,9 +32,14 @@ AST::Base* Parser::parse() {
         this->expect("/");
       }
 
-      do {
+      while( this->check() ) {
         path += this->expectIdentifier()->str;
-      } while( this->eat("/") );
+
+        if( this->eat("/") )
+          path += "/";
+        else
+          break;
+      }
 
       this->expect(";");
 

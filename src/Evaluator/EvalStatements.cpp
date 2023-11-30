@@ -163,7 +163,7 @@ void Evaluator::evalStatements(AST::Base* ast) {
       case Type::String: {
         auto _Str = content->as<String>();
 
-        for( auto&& _Char : _Str->value ) {
+        for( auto&& _Char : _Str->characters ) {
           iter = _Char;
           this->eval(x->code);
         }
@@ -189,9 +189,15 @@ void Evaluator::evalStatements(AST::Base* ast) {
       case Type::Range: {
         auto range = content->as<Range>();
 
-        for( iter = new Int(range->begin); iter->as<Int>()->value < range->end; iter->as<Int>()->value++ ) {
+        iter = range->begin->clone();
+
+        GC::bind(iter);
+
+        for( ; iter->as<Int>()->value < range->end->value; iter->as<Int>()->value++ ) {
           this->eval(x->code);
         }
+
+        GC::unbind(iter);
 
         break;
       }
