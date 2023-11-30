@@ -27,12 +27,18 @@ class Error;
 class Metro {
 public:
   struct ScriptInfo {
+    // source code
     SourceLoc  source;
-    
+
+    // Change working directory to this before evaluate script.
+    std::string cwd;
+
     Token*            token;
     AST::Base*        ast;
     objects::Object*  result;
     std::vector<ScriptInfo*> _imported;
+
+    ScriptInfo* import(std::string const& path);
 
     ScriptInfo(std::string const& path);
     ~ScriptInfo();

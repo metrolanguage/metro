@@ -8,6 +8,8 @@ struct SourceLoc {
   std::string path;
   std::string data;
 
+  void open();
+
   SourceLoc();
   SourceLoc(std::string const& path);
 };

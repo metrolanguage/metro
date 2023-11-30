@@ -3,6 +3,7 @@
 #include <thread>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace metro::utils {
 
@@ -12,6 +13,10 @@ std::string format(char const* fmt, Ts&&... args) {
   std::sprintf(buf, fmt, std::forward<Ts>(args)...);
   return buf;
 }
+
+std::string join(std::string str, std::vector<std::string> const& vec);
+
+std::vector<std::string> split(std::string str, char c);
 
 std::string open_text_file(std::string const& path);
 

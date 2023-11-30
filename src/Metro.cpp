@@ -1,5 +1,8 @@
 #include <iostream>
 #include <cstdlib>
+#include <filesystem>
+
+#include "alert.h"
 
 #include "Metro.h"
 #include "Color.h"
@@ -25,12 +28,23 @@ namespace metro {
 
 static Metro* g_instance;
 
+static std::string application_cwd;
+
 Metro::ScriptInfo::ScriptInfo(std::string const& path)
   : source(path),
+    cwd(application_cwd),
     token(nullptr),
     ast(nullptr),
     result(nullptr)
 {
+  for( int i = path.size(); i >= 0; i-- ) {
+    if( path[i] == '/' ) {
+      this->cwd += path.substr(0, i + 1);
+      break;
+    }
+  }
+
+  this->source.open();
 }
 
 Metro::ScriptInfo::~ScriptInfo()
@@ -43,10 +57,15 @@ Metro::ScriptInfo::~ScriptInfo()
     delete S;
 }
 
+Metro::ScriptInfo* Metro::ScriptInfo::import(std::string const& path) {
+  return this->_imported.emplace_back(new ScriptInfo(this->cwd + path));
+}
+
 Metro::Metro(int argc, char** argv)
   : currentScript(nullptr)
 {
   g_instance = this;
+  application_cwd = std::filesystem::current_path().string() + "/";
   
   while( argc-- )
     this->args.emplace_back(*argv++);
@@ -94,6 +113,8 @@ Metro* Metro::getInstance() {
 void Metro::evaluateScript(Metro::ScriptInfo& script) {
   this->currentScript = &script;
 
+  script.source.open();
+
   Lexer lexer{ script.source };
 
   script.token = lexer.lex();
@@ -114,6 +135,7 @@ void Metro::evaluateScript(Metro::ScriptInfo& script) {
 }
 
 void Metro::parseArguments() {
+
   for( auto it = args.begin() + 1; it != args.end(); it++ ) {
     auto& arg = *it;
 

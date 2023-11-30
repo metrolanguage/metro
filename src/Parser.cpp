@@ -27,6 +27,11 @@ AST::Base* Parser::parse() {
       std::string path;
       AST::Base* read = nullptr;
 
+      while( this->eat("..") ) {
+        path += "../";
+        this->expect("/");
+      }
+
       do {
         path += this->expectIdentifier()->str;
       } while( this->eat("/") );
@@ -38,8 +43,7 @@ AST::Base* Parser::parse() {
       auto mt = Metro::getInstance();
       auto curscript = mt->getRunningScript();
 
-      auto importedScript =
-        curscript->_imported.emplace_back(new Metro::ScriptInfo(path));
+      auto importedScript = curscript->import(path);
 
       auto save = curscript;
 

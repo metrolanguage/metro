@@ -1,3 +1,4 @@
+#include "alert.h"
 #include "SourceLoc.h"
 #include "Utils.h"
 
@@ -8,9 +9,12 @@ SourceLoc::SourceLoc()
 }
 
 SourceLoc::SourceLoc(std::string const& path)
-  : path(path),
-    data(utils::open_text_file(path))
+  : path(path)
 {
+}
+
+void SourceLoc::open() {
+  this->data = utils::open_text_file(this->path);
 }
 
 } // namespace metro
