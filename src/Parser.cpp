@@ -9,6 +9,15 @@
 
 namespace metro {
 
+static const std::pair<std::string_view, char> escape_sequence_pairs[] = {
+  { "\\\\", '\\' },
+  { "\\n" , '\n' },
+  { "\\t" , '\t' },
+  { "\\b" , '\b' },
+  { "\\r" , '\r' },
+  { "\\a" , '\a' },
+};
+
 Parser::Parser(Token* token)
   : token(token),
     ate(nullptr)
@@ -164,9 +173,22 @@ AST::Base* Parser::factor() {
       return new AST::Value(tok,
         new objects::Char(objects::String::conv.from_bytes(std::string(tok->str))[0]));
 
-    case TokenKind::String:
+    case TokenKind::String: {
       this->next();
-      return new AST::Value(tok, new objects::String(std::string(tok->str)));
+
+      auto str = std::string(tok->str);
+
+      for( size_t i = 0; i < str.length(); i++ ) {
+        for( auto&& [es, c] : escape_sequence_pairs ) {
+          if( i + es.length() <= str.length() && str.substr(i, es.length()) == es ) {
+            str.erase(str.begin() + i, str.begin() + i + es.length());
+            str.insert(str.begin() + i, c);
+          }
+        }
+      }
+
+      return new AST::Value(tok, new objects::String(str));
+    }
 
     case TokenKind::Identifier: {
       this->next();

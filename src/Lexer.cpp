@@ -111,6 +111,25 @@ Token* Lexer::lex() {
       cur = new Token(TokenKind::String, cur, this->eat_literal(c), pos + 1);
     }
 
+    // comment line
+    else if( this->match("//") ) {
+      this->position += 2;
+
+      while( this->check() && this->peek() != '\n' )
+        this->position++;
+    }
+
+    // comment block
+    else if( this->match("/*") ) {
+      this->position += 2;
+
+      while( this->check() && !this->match("*/") ) {
+        this->position++;
+      }
+
+      this->position += 2;
+    }
+
     // find punctuater
     else {
       for( std::string_view pu : punctuaters ) {
@@ -179,8 +198,14 @@ size_t Lexer::pass_while(std::function<bool(char)> cond) {
 std::string_view Lexer::eat_literal(char quat) {
   auto pos = ++this->position;
 
-  while( this->peek() != quat )
+  while( this->check() && this->peek() != quat ) {
+    // escape sequence
+    if( this->match("\\") ) {
+      
+    }
+
     this->position++;
+  }
 
   return { this->source.data() + pos, (this->position++) - pos };
 }
