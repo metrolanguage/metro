@@ -133,7 +133,7 @@ struct Value : Base {
 
   Value(Token* token, objects::Object* object)
     : Base(ASTKind::Value, token),
-      object(object->toUndead())
+      object(object->to_undead())
   {
   }
 

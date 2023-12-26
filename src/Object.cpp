@@ -44,41 +44,41 @@ Object::~Object()
   )
 }
 
-Object* Object::toUndead() {
+Object* Object::to_undead() {
   this->_isUndead = true;
 
   switch( this->type.kind ) {
     case Type::String:
       for( auto&& ch : this->as<String>()->characters )
-        ch->toUndead();
+        ch->to_undead();
 
       break;
 
     case Type::Vector:
       for( auto&& elem : this->as<Vector>()->elements )
-        elem->toUndead();
+        elem->to_undead();
 
       break;
 
     case Type::Dict:
       for( auto&& [key, value] : this->as<Dict>()->elements ) {
-        key->toUndead();
-        value->toUndead();
+        key->to_undead();
+        value->to_undead();
       }
 
       break;
 
     case Type::Tuple:
       for( auto&& elem : this->as<Tuple>()->elements )
-        elem->toUndead();
+        elem->to_undead();
 
       break;
 
     case Type::Pair: {
       auto pair = this->as<Pair>();
 
-      pair->first->toUndead();
-      pair->second->toUndead();
+      pair->first->to_undead();
+      pair->second->to_undead();
 
       break;
     }
@@ -125,6 +125,16 @@ bool Object::equals(Object* object) const {
   assert(this->type.equals(Type::None));
 
   return true;
+}
+
+template <>
+std::string _Primitive<double, Type::Float>::to_string() const {
+  auto str = std::to_string(this->value);
+
+  while( str.length() > 0 && *str.rbegin() == '0' )
+    str.pop_back();
+
+  return str;
 }
 
 //

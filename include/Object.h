@@ -31,7 +31,7 @@ struct Object {
     return this->_isUndead;
   }
 
-  Object* toUndead();
+  Object* to_undead();
 
   bool isNumeric() const;
   bool equals(Object* object) const;
@@ -98,6 +98,9 @@ struct _Primitive : Object {
   {
   }
 };
+
+template <>
+std::string _Primitive<double, Type::Float>::to_string() const;
 
 template <>
 struct _Primitive<bool, Type::Bool> : Object {
