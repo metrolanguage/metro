@@ -105,7 +105,7 @@ protected:
   }
 };
 
-struct WithName : Base {
+struct Named : Base {
   std::string name;
   Token* nameToken;
 
@@ -113,14 +113,14 @@ struct WithName : Base {
     return this->name;
   }
 
-  WithName(ASTKind kind, std::string const& name)
+  Named(ASTKind kind, std::string const& name)
     : Base(kind, nullptr),
       name(name),
       nameToken(nullptr)
   {
   }
 
-  WithName(ASTKind kind, Token* token, Token* nameToken)
+  Named(ASTKind kind, Token* token, Token* nameToken)
     : Base(kind, token),
       name(nameToken->str),
       nameToken(nameToken)
@@ -142,11 +142,11 @@ struct Value : Base {
   }
 };
 
-struct Variable : WithName {
-  using WithName::WithName;
+struct Variable : Named {
+  using Named::Named;
   
   Variable(Token* token)
-    : WithName(ASTKind::Variable, token, token)
+    : Named(ASTKind::Variable, token, token)
   {
   }
 };
@@ -168,11 +168,11 @@ struct Array : Base {
 };
 
 struct Function;
-struct CallFunc : WithName {
+struct CallFunc : Named {
   std::vector<Base*> arguments;
 
   CallFunc(Token* token, std::vector<Base*> arguments = { })
-    : WithName(ASTKind::CallFunc, token, token),
+    : Named(ASTKind::CallFunc, token, token),
       arguments(std::move(arguments))
   {
   }
@@ -345,14 +345,14 @@ struct Function : Base {
 //
 // --> for enum, struct
 //
-struct IdentifierList : WithName {
+struct IdentifierList : Named {
   Token*& append(Token* token) {
     return this->_idents.emplace_back(token);
   }
 
 protected:
   IdentifierList(ASTKind kind, Token* token, Token* nametok)
-    : WithName(kind, token, nametok)
+    : Named(kind, token, nametok)
   {
   }
 
