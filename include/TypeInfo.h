@@ -27,7 +27,7 @@ struct TypeInfo {
     Struct,
     Enumerator,
     Args,
-    Any,    // ?
+    Any,    // temporary type for templated statements
   };
 
   Kind kind;
