@@ -24,7 +24,7 @@ debug(
   static XX _xx;
 )
 
-Object::Object(Type type)
+Object::Object(TypeInfo type)
   : type(std::move(type)),
     isMarked(false),
     noDelete(false)
@@ -47,9 +47,9 @@ Object::~Object()
 
 bool Object::isNumeric() const {
   switch( type.kind ) {
-    case Type::Int:
-    case Type::Float:
-    case Type::USize:
+    case TypeInfo::Int:
+    case TypeInfo::Float:
+    case TypeInfo::USize:
       return true;
   }
 
@@ -58,7 +58,7 @@ bool Object::isNumeric() const {
 
 bool Object::equals(Object* object) const {
 #define __CASE__(T) \
-  case Type::T: return this->as<T>()->equals(object->as<T>());
+  case TypeInfo::T: return this->as<T>()->equals(object->as<T>());
 
   if( !this->type.equals(object->type) )
     return false;
@@ -76,12 +76,12 @@ bool Object::equals(Object* object) const {
     __CASE__(Range)
   }
 
-  assert(this->type.equals(Type::None));
+  assert(this->type.equals(TypeInfo::None));
 
   return true;
 }
 
-std::string _Primitive<std::u16string, Type::String>::to_string() const {
+std::string _Primitive<std::u16string, TypeInfo::String>::to_string() const {
   std::u16string s;
 
   for( auto&& c : this->value )
@@ -90,7 +90,7 @@ std::string _Primitive<std::u16string, Type::String>::to_string() const {
   return conv.to_bytes(s);
 }
 
-String* _Primitive<std::u16string, Type::String>::clone() const {
+String* _Primitive<std::u16string, TypeInfo::String>::clone() const {
   return new String(this->value);
 }
 
@@ -105,20 +105,20 @@ bool String::equals(String* str) const {
   return true;
 }
 
-_Primitive<std::u16string, Type::String>::_Primitive(std::u16string const& str)
-  : Object(Type::String)
+_Primitive<std::u16string, TypeInfo::String>::_Primitive(std::u16string const& str)
+  : Object(TypeInfo::String)
 {
   for( auto&& c : str )
     this->value.emplace_back(new Char(c));
 }
 
-_Primitive<std::u16string, Type::String>::_Primitive(std::string const& str)
+_Primitive<std::u16string, TypeInfo::String>::_Primitive(std::string const& str)
   : _Primitive(conv.from_bytes(str))
 {
 }
 
-_Primitive<std::u16string, Type::String>::_Primitive(std::vector<Char*> val)
-  : Object(Type::String),
+_Primitive<std::u16string, TypeInfo::String>::_Primitive(std::vector<Char*> val)
+  : Object(TypeInfo::String),
     value(std::move(val))
 {
 }
@@ -141,13 +141,13 @@ std::string Vector::to_string() const {
   
   std::string ret;
 
-  auto isStruct = this->type.kind == Type::Struct;
+  auto isStruct = this->type.kind == TypeInfo::Struct;
 
   for( size_t i = 0; i < this->elements.size(); i++ ) {
     auto& e = this->elements[i];
 
     if( isStruct )
-      ret += std::string(this->type.astStruct->members[i]->str) + ": ";
+      ret += std::string(this->type.ast_struct->members[i]->str) + ": ";
 
     ret += e->to_string();
 
@@ -156,7 +156,7 @@ std::string Vector::to_string() const {
   }
 
   if( isStruct )
-    return this->type.astStruct->getName() + "{" + ret + "}";
+    return this->type.ast_struct->getName() + "{" + ret + "}";
 
   return '[' + ret + ']';
 }
@@ -186,10 +186,10 @@ bool Vector::equals(Vector* vec) const {
 /*
   * getMember():
   *   find the member with name
-  *   only can use in Type::Struct
+  *   only can use in TypeInfo::Struct
   */
 Object** Vector::getMember(std::string const& name) {
-  for( size_t i = 0; auto&& m : this->type.astStruct->members ) {
+  for( size_t i = 0; auto&& m : this->type.ast_struct->members ) {
     if( m->str == name )
       return &this->elements[i];
 

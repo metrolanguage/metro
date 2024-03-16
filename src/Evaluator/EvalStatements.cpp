@@ -63,7 +63,7 @@ void Evaluator::evalStatements(AST::Base* ast) {
 
     auto cond = this->eval(x->cond);
 
-    if( !cond->type.equals(Type::Bool) ) {
+    if( !cond->type.equals(TypeInfo::Bool) ) {
       Error(x->cond)
         .setMessage("expected boolean expression")
         .emit()
@@ -119,7 +119,7 @@ void Evaluator::evalStatements(AST::Base* ast) {
     while( true ) {
       auto cond = this->eval(x->cond);
 
-      if( !cond->type.equals(Type::Bool) )
+      if( !cond->type.equals(TypeInfo::Bool) )
         Error(x->cond)
           .setMessage("expected boolean expression")
           .emit()
@@ -152,15 +152,15 @@ void Evaluator::evalStatements(AST::Base* ast) {
       saved_var_ptr = &iter;
     }
 
-    if( !content->type.isIterable() ) {
+    if( !content->type.is_iterable() ) {
       Error(x->content)
-        .setMessage("object of type '" + content->type.toString() + "' is not iterable")
+        .setMessage("object of type '" + content->type.to_string() + "' is not iterable")
         .emit()
         .exit();
     }
 
     switch( content->type.kind ) {
-      case Type::String: {
+      case TypeInfo::String: {
         auto _Str = content->as<String>();
 
         for( auto&& _Char : _Str->value ) {
@@ -171,7 +171,7 @@ void Evaluator::evalStatements(AST::Base* ast) {
         break;
       }
 
-      case Type::Vector: {
+      case TypeInfo::Vector: {
         auto _Vec = content->as<Vector>();
 
         for( auto&& _Elem : _Vec->elements ) {
@@ -182,11 +182,11 @@ void Evaluator::evalStatements(AST::Base* ast) {
         break;
       }
 
-      case Type::Dict: {
+      case TypeInfo::Dict: {
         todo_impl;
       }
 
-      case Type::Range: {
+      case TypeInfo::Range: {
         auto range = content->as<Range>();
 
         for( iter = new Int(range->begin); iter->as<Int>()->value < range->end; iter->as<Int>()->value++ ) {

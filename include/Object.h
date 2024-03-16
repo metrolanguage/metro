@@ -2,23 +2,23 @@
 
 #include <codecvt>
 #include <locale>
-#include "Type.h"
+#include "TypeInfo.h"
 #include "Utils.h"
 
 namespace metro::objects {
 
-template <class T, Type::Kind k>
+template <class T, TypeInfo::Kind k>
 struct _Primitive;
 
-using Int     = _Primitive<int64_t,        Type::Int>;
-using Float   = _Primitive<double,         Type::Float>;
-using Bool    = _Primitive<bool,           Type::Bool>;
-using USize   = _Primitive<size_t,         Type::USize>;
-using Char    = _Primitive<char16_t,       Type::Char>;
-using String  = _Primitive<std::u16string, Type::String>;
+using Int     = _Primitive<int64_t,        TypeInfo::Int>;
+using Float   = _Primitive<double,         TypeInfo::Float>;
+using Bool    = _Primitive<bool,           TypeInfo::Bool>;
+using USize   = _Primitive<size_t,         TypeInfo::USize>;
+using Char    = _Primitive<char16_t,       TypeInfo::Char>;
+using String  = _Primitive<std::u16string, TypeInfo::String>;
 
 struct Object {
-  Type type;
+  TypeInfo type;
   bool isMarked;
   bool noDelete;
 
@@ -36,7 +36,7 @@ struct Object {
   virtual ~Object();
 
 protected:
-  Object(Type type);
+  Object(TypeInfo type);
 };
 
 struct None : Object {
@@ -57,7 +57,7 @@ struct None : Object {
   }
 
   None()
-    : Object(Type::None)
+    : Object(TypeInfo::None)
   {
   }
 
@@ -65,7 +65,7 @@ private:
   static None _none;
 };
 
-template <class T, Type::Kind k>
+template <class T, TypeInfo::Kind k>
 struct _Primitive : Object {
   using ValueType = T;
   
@@ -91,7 +91,7 @@ struct _Primitive : Object {
 };
 
 template <>
-struct _Primitive<bool, Type::Bool> : Object {
+struct _Primitive<bool, TypeInfo::Bool> : Object {
   bool value;
 
   std::string to_string() const {
@@ -107,14 +107,14 @@ struct _Primitive<bool, Type::Bool> : Object {
   }
 
   _Primitive(bool val = false)
-    : Object(Type::Bool),
+    : Object(TypeInfo::Bool),
       value(val)
   {
   }
 };
 
 template <>
-struct _Primitive<std::u16string, Type::String> : Object {
+struct _Primitive<std::u16string, TypeInfo::String> : Object {
   std::vector<Char*> value;
 
   std::string to_string() const;
@@ -134,7 +134,7 @@ struct _Primitive<std::u16string, Type::String> : Object {
 };
 
 template <>
-struct _Primitive<char16_t, Type::Char> : Object {
+struct _Primitive<char16_t, TypeInfo::Char> : Object {
   char16_t value;
 
   std::string to_string() const {
@@ -150,7 +150,7 @@ struct _Primitive<char16_t, Type::Char> : Object {
   }
 
   _Primitive(char16_t val = 0)
-    : Object(Type::Char),
+    : Object(TypeInfo::Char),
       value(val)
   {
   }
@@ -178,12 +178,12 @@ struct Vector : Object {
   /*
    * getMember():
    *   find the member with name
-   *   only can use in Type::Struct
+   *   only can use in TypeInfo::Struct
    */
   Object** getMember(std::string const& name);
 
   Vector(std::vector<Object*> elements = { })
-    : Object(Type::Vector),
+    : Object(TypeInfo::Vector),
       elements(std::move(elements))
   {
   }
@@ -237,7 +237,7 @@ struct Dict : Object {
   }
 
   Dict(std::vector<std::pair<Object*, Object*>>&& elements = { })
-    : Object(Type::Dict),
+    : Object(TypeInfo::Dict),
       elements(std::move(elements))
   {
   }
@@ -278,7 +278,7 @@ struct Tuple : Object {
   }
 
   Tuple(std::vector<Object*> elements)
-    : Object(Type::Tuple),
+    : Object(TypeInfo::Tuple),
       elements(std::move(elements))
   {
   }
@@ -303,7 +303,7 @@ struct Pair : Object {
   }
 
   Pair(Object* first, Object* second)
-    : Object(Type::Pair),
+    : Object(TypeInfo::Pair),
       first(first),
       second(second)
   {
@@ -327,7 +327,7 @@ struct Range : Object {
   }
 
   Range(int64_t begin, int64_t end)
-    : Object(Type::Range),
+    : Object(TypeInfo::Range),
       begin(begin),
       end(end)
   {

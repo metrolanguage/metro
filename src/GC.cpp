@@ -70,7 +70,7 @@ void _Mark(Object* object) {
   mark_count++;
 
   switch( object->type.kind ) {
-    case Type::Vector: {
+    case TypeInfo::Vector: {
       auto vec = object->as<Vector>();
 
       for( auto&& e : vec->elements )
@@ -79,7 +79,7 @@ void _Mark(Object* object) {
       break;
     }
 
-    case Type::Dict: {
+    case TypeInfo::Dict: {
       auto vec = object->as<Dict>();
 
       for( auto&& [k, v] : vec->elements ) {

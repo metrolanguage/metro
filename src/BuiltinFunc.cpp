@@ -21,7 +21,7 @@ using namespace metro::objects;
 
 namespace metro::builtin {
 
-static bool _isMatch(std::vector<Object*> const& args, std::vector<Type> const& pattern) {
+static bool _isMatch(std::vector<Object*> const& args, std::vector<TypeInfo> const& pattern) {
   if( args.size() != pattern.size() )
     return false;
 
@@ -72,12 +72,12 @@ DEF( println ) {
 //
 DEF( random ) {
   // range
-  if( MATCH(Type::Range) ) {
+  if( MATCH(TypeInfo::Range) ) {
     auto range = args[0]->as<Range>();
     return new Int(rand() % (range->end - range->begin));
   }
   // begin, end
-  else if( MATCH(Type::Int, Type::Int) ) {
+  else if( MATCH(TypeInfo::Int, TypeInfo::Int) ) {
     auto begin = args[0]->as<Int>()->value;
     auto end = args[1]->as<Int>()->value;
 
@@ -99,7 +99,7 @@ DEF( random ) {
 //
 DEF( vector ) {
   // range
-  if( MATCH(Type::Range) ) {
+  if( MATCH(TypeInfo::Range) ) {
     auto range = args[0]->as<Range>();
     auto vec = new Vector;
 
@@ -111,7 +111,7 @@ DEF( vector ) {
   }
 
   // count, object
-  else if( MATCH(Type::USize, Type::Any) ) {
+  else if( MATCH(TypeInfo::USize, TypeInfo::Any) ) {
     auto vec = new Vector;
 
     for( size_t i = 0; i < args[0]->as<USize>()->value; i++ )

@@ -117,8 +117,8 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       auto obj = new Vector();
 
-      obj->type = Type::Struct;
-      obj->type.astStruct = S;
+      obj->type = TypeInfo::Struct;
+      obj->type.ast_struct = S;
 
       for( auto it = S->members.begin(); auto&& arg : x->arguments ) {
         auto init = arg->as<AST::Expr>();
@@ -158,22 +158,22 @@ Object* Evaluator::eval(AST::Base* ast) {
         name = member->getName();
 
         switch( obj->type.kind ) {
-          case Type::Int: {
+          case TypeInfo::Int: {
             if( name == "abs" )
               return new Int(std::abs(obj->as<Int>()->value));
 
             break;
           }
 
-          case Type::String: {
+          case TypeInfo::String: {
             if( name == "count" )
               return new USize(obj->as<String>()->value.size());
 
             break;
           }
 
-          case Type::Struct: {
-            auto S = obj->type.astStruct;
+          case TypeInfo::Struct: {
+            auto S = obj->type.ast_struct;
 
             for( size_t i = 0; i < S->members.size(); i++ ) {
               if( S->members[i]->str == name )
@@ -193,7 +193,7 @@ Object* Evaluator::eval(AST::Base* ast) {
       }
 
       Error(x->right)
-        .setMessage("object of type '" + obj->type.toString() + "' don't have a member '" + name + "'")
+        .setMessage("object of type '" + obj->type.to_string() + "' don't have a member '" + name + "'")
         .emit()
         .exit();
     }
@@ -206,7 +206,7 @@ Object* Evaluator::eval(AST::Base* ast) {
 
       auto obj = this->eval(x->left);
 
-      if( !obj->type.equals(Type::Bool) ) {
+      if( !obj->type.equals(TypeInfo::Bool) ) {
         Error(x->left)
           .setMessage("expected boolean expression")
           .emit()
@@ -236,14 +236,14 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto lhs = this->eval(x->left);
       auto rhs = this->eval(x->right);
 
-      if( !lhs->type.equals(Type::Bool) ) {
+      if( !lhs->type.equals(TypeInfo::Bool) ) {
         Error(x->left)
           .setMessage("expected boolean expression")
           .emit()
           .exit();
       }
 
-      if( !rhs->type.equals(Type::Bool) ) {
+      if( !rhs->type.equals(TypeInfo::Bool) ) {
         Error(x->right)
           .setMessage("expected boolean expression")
           .emit()
@@ -265,13 +265,13 @@ Object* Evaluator::eval(AST::Base* ast) {
       auto begin = this->eval(x->left);
       auto end = this->eval(x->right);
 
-      if( !begin->type.equals(Type::Int) )
+      if( !begin->type.equals(TypeInfo::Int) )
         Error(x->left)
           .setMessage("expected 'int' object")
           .emit()
           .exit();
 
-      if( !end->type.equals(Type::Int) )
+      if( !end->type.equals(TypeInfo::Int) )
         Error(x->right)
           .setMessage("expected 'int' object")
           .emit()
@@ -362,11 +362,11 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
   size_t index = 0;
 
   switch( objIndex->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       index = objIndex->as<Int>()->value;
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       index = objIndex->as<USize>()->value;
       break;
 
@@ -378,16 +378,16 @@ Object*& Evaluator::evalIndexRef(AST::Expr* ast, Object* obj, Object* objIndex) 
   }
 
   switch( obj->type.kind ) {
-    case Type::String: {
+    case TypeInfo::String: {
       return (Object*&)obj->as<String>()->value[index];
     }
 
-    case Type::Vector:
+    case TypeInfo::Vector:
       return obj->as<Vector>()->elements[index];
   }
 
   Error(ast->right)
-    .setMessage("object of type '" + obj->type.toString() + "' is not subscriptable")
+    .setMessage("object of type '" + obj->type.to_string() + "' is not subscriptable")
     .emit()
     .exit();
 }
@@ -409,7 +409,7 @@ Object* Evaluator::evalCallFunc(AST::CallFunc* ast, Object* self, std::vector<Ob
     auto error = Error(ast->token);
 
     if( self )
-      error.setMessage("object of type '" + self->type.toString() + "' is not have member function '" + name + "'");
+      error.setMessage("object of type '" + self->type.to_string() + "' is not have member function '" + name + "'");
     else
       error.setMessage("undefined function name '" + name + "'");
 

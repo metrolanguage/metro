@@ -26,18 +26,18 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
     //
     // left is Int
     //
-    case Type::Int: {
+    case TypeInfo::Int: {
       switch( rhs->type.kind ) {
         // int + int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value + rhs->as<Int>()->value);
 
         // int + float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Int(lhs->as<Int>()->value + (Int::ValueType)rhs->as<Float>()->value);
 
         // int + usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value + (Int::ValueType)rhs->as<USize>()->value);
       }
 
@@ -47,39 +47,39 @@ Object* obj_add(AST::Expr* expr, Object* lhs, Object* rhs) {
     //
     // left is float
     //
-    case Type::Float: {
+    case TypeInfo::Float: {
       switch( rhs->type.kind ) {
         // float + int
-        case Type::Int:
+        case TypeInfo::Int:
           return obj_add(expr, rhs, lhs);
         
         // float + float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Float(lhs->as<Float>()->value + rhs->as<Float>()->value);
         
         // float + usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Float(lhs->as<Float>()->value + (Float::ValueType)rhs->as<Float>()->value);
       }
 
       break;
     }
 
-    case Type::String:
+    case TypeInfo::String:
       switch( rhs->type.kind ) {
         // string + char
-        case Type::Char:
+        case TypeInfo::Char:
           return lhs->as<String>()->clone()->append(rhs->as<Char>());
 
         // string + string
-        case Type::String:
+        case TypeInfo::String:
           return lhs->as<String>()->clone()->append(rhs->as<String>());
       }
       break;
 
-    case Type::Char:
+    case TypeInfo::Char:
       switch( rhs->type.kind ) {
-        case Type::String: {
+        case TypeInfo::String: {
           rhs->as<String>()->value.insert(rhs->as<String>()->value.begin(), lhs->as<Char>()->clone());
           return rhs;
         }
@@ -99,18 +99,18 @@ Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
   
   switch( lhs->type.kind ) {
     // left is Int
-    case Type::Int: {
+    case TypeInfo::Int: {
       switch( rhs->type.kind ) {
         // int - int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value - rhs->as<Int>()->value);
 
         // int - float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Int(lhs->as<Int>()->value - (Int::ValueType)rhs->as<Float>()->value);
 
         // int - usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value - (Int::ValueType)rhs->as<USize>()->value);
       }
 
@@ -118,18 +118,18 @@ Object* obj_sub(AST::Expr* expr, Object* lhs, Object* rhs) {
     }
 
     // left is float
-    case Type::Float: {
+    case TypeInfo::Float: {
       switch( rhs->type.kind ) {
         // float - int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Float(lhs->as<Float>()->value - rhs->as<Int>()->value);
 
         // float - float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Float(lhs->as<Float>()->value - rhs->as<Float>()->value);
 
         // float - usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Float(lhs->as<Float>()->value - (Float::ValueType)rhs->as<Float>()->value);
       }
 
@@ -147,59 +147,59 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int * int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value * rhs->as<Int>()->value);
 
         // int * float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Int(lhs->as<Int>()->value * (Int::ValueType)rhs->as<Float>()->value);
 
         // int * usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value *= (Int::ValueType)rhs->as<USize>()->value);
 
         // int * string  // --> jump to (usize * string)
         // int * vector // --> jump to (usize * vector)
-        case Type::String:
-        case Type::Vector:
+        case TypeInfo::String:
+        case TypeInfo::Vector:
           return obj_mul(expr, new USize(lhs->as<Int>()->value), rhs);
       }
       break;
 
-    case Type::Float:
+    case TypeInfo::Float:
       switch( rhs->type.kind ) {
         // float * int
-        case Type::Int:
+        case TypeInfo::Int:
           return obj_mul(expr, rhs, lhs);
 
         // float * float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Float(lhs->as<Float>()->value * rhs->as<Float>()->value);
         
         // float * usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Float(lhs->as<Float>()->value * (Float::ValueType)rhs->as<USize>()->value);
       }
       break;
     
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize * int
         // usize * float
-        case Type::Int:
-        case Type::Float:
+        case TypeInfo::Int:
+        case TypeInfo::Float:
           return obj_mul(expr, rhs, lhs);
 
         // usize * usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value *= rhs->as<USize>()->value);
 
         // usize * string
         // => string
-        case Type::String: {
+        case TypeInfo::String: {
           auto obj = new String();
 
           for( USize::ValueType i = 0; i < lhs->as<USize>()->value; i++ )
@@ -210,7 +210,7 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
         }
 
         // usize * vector
-        case Type::Vector: {
+        case TypeInfo::Vector: {
           auto obj = new Vector();
 
           for( USize::ValueType i = 0; i < lhs->as<USize>()->value; i++ ) {
@@ -223,24 +223,24 @@ Object* obj_mul(AST::Expr* expr, Object* lhs, Object* rhs) {
       }
       break;
 
-    case Type::String:
+    case TypeInfo::String:
       switch( rhs->type.kind ) {
         // string * int
         // string * usize
-        case Type::Int:
-        case Type::USize:
+        case TypeInfo::Int:
+        case TypeInfo::USize:
           return obj_mul(expr, rhs, lhs);
       }
       break;
 
-    case Type::Vector:
+    case TypeInfo::Vector:
       switch( rhs->type.kind ) {
         // vector * int
-        case Type::Int:
+        case TypeInfo::Int:
           return obj_mul(expr, new USize(rhs->as<Int>()->value), lhs);
 
         // vector * usize
-        case Type::USize:
+        case TypeInfo::USize:
           return obj_mul(expr, rhs, lhs);
       }
       break;
@@ -256,10 +256,10 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int / int
-        case Type::Int:
+        case TypeInfo::Int:
           if( rhs->as<Int>()->value == 0 )
             Error(expr->token)
               .setMessage("divided by zero")
@@ -269,7 +269,7 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
           return new Int(lhs->as<Int>()->value / rhs->as<Int>()->value);
 
         // int / float
-        case Type::Float:
+        case TypeInfo::Float:
           if( rhs->as<Float>()->value == 0 )
             Error(expr->token)
               .setMessage("divided by zero")
@@ -279,7 +279,7 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
           return new Int(lhs->as<Int>()->value / (Int::ValueType)rhs->as<Float>()->value);
 
         // int / usize
-        case Type::USize:
+        case TypeInfo::USize:
           if( rhs->as<USize>()->value == 0 )
             Error(expr->token)
               .setMessage("divided by zero")
@@ -290,14 +290,14 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
       }
       break;
 
-    case Type::Float:
+    case TypeInfo::Float:
       switch( rhs->type.kind ) {
         // float / int
-        case Type::Int:
+        case TypeInfo::Int:
           return obj_mul(expr, rhs, lhs);
 
         // float / float
-        case Type::Float:
+        case TypeInfo::Float:
           if( rhs->as<Float>()->value == 0 )
             Error(expr->token)
               .setMessage("divided by zero")
@@ -307,7 +307,7 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
           return new Float(lhs->as<Float>()->value / rhs->as<Float>()->value);
 
         // float / usize
-        case Type::USize: {
+        case TypeInfo::USize: {
           if( rhs->as<USize>()->value == 0 )
             Error(expr->token)
               .setMessage("divided by zero")
@@ -319,15 +319,15 @@ Object* obj_div(AST::Expr* expr, Object* lhs, Object* rhs) {
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize / int
-        case Type::Int:
-        case Type::Float:
+        case TypeInfo::Int:
+        case TypeInfo::Float:
           return obj_div(expr, rhs, lhs);
 
         // usize / usize
-        case Type::USize: {
+        case TypeInfo::USize: {
           if( rhs->as<USize>()->value == 0 )
             Error(expr->token)
               .setMessage("divided by zero")
@@ -350,49 +350,49 @@ Object* obj_mod(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int % int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value % rhs->as<Int>()->value);
         
         // int % float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Int(lhs->as<Int>()->value % (Int::ValueType)rhs->as<Float>()->value);
 
         // int % usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value % (Int::ValueType)rhs->as<USize>()->value);
       }
       break;
 
-    case Type::Float:
+    case TypeInfo::Float:
       switch( rhs->type.kind ) {
         // float % int
-        case Type::Int:
-        case Type::USize:
+        case TypeInfo::Int:
+        case TypeInfo::USize:
           return obj_mod(expr, rhs, lhs);
 
         // float % float
         // => int
-        case Type::Float:
+        case TypeInfo::Float:
           return new Int(
             (Int::ValueType)lhs->as<Float>()->value % (Int::ValueType)rhs->as<Float>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize % int
-        case Type::Int:
+        case TypeInfo::Int:
           return obj_mod(expr, rhs, lhs);
 
         // usize % float
-        case Type::Float:
+        case TypeInfo::Float:
           return new USize(lhs->as<USize>()->value % (USize::ValueType)rhs->as<Float>()->value);
         
         // usize % usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value % rhs->as<USize>()->value);
       }
       break;
@@ -408,26 +408,26 @@ Object* obj_lshift(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int << int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value << rhs->as<Int>()->value);
         
         // int << usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value << rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize << int
-        case Type::Int:
+        case TypeInfo::Int:
           return new USize(lhs->as<USize>()->value << rhs->as<Int>()->value);
         
         // usize << usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value << rhs->as<USize>()->value);
       }
       break;
@@ -443,26 +443,26 @@ Object* obj_rshift(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
   
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int << int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value >> rhs->as<Int>()->value);
         
         // int << usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value >> rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize << int
-        case Type::Int:
+        case TypeInfo::Int:
           return new USize(lhs->as<USize>()->value >> rhs->as<Int>()->value);
         
         // usize << usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value >> rhs->as<USize>()->value);
       }
       break;
@@ -478,50 +478,50 @@ Object* obj_bigger(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int > int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Bool(lhs->as<Int>()->value > rhs->as<Int>()->value);
 
         // int > float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Bool(lhs->as<Int>()->value > (Int::ValueType)rhs->as<Float>()->value);
 
         // int > usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Bool(lhs->as<Int>()->value > (Int::ValueType)rhs->as<USize>()->value);
       }
       break;
 
-    case Type::Float:
+    case TypeInfo::Float:
       switch( rhs->type.kind ) {
         // float > int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Bool(lhs->as<Float>()->value > rhs->as<Int>()->value);
 
         // float > float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Bool(lhs->as<Float>()->value > (Float::ValueType)rhs->as<Float>()->value);
 
         // float > usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Bool(lhs->as<Float>()->value > (Float::ValueType)rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize > int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Bool(lhs->as<USize>()->value > (unsigned)rhs->as<Int>()->value);
 
         // usize > float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<Float>()->value);
 
         // usize > usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Bool(lhs->as<USize>()->value > (USize::ValueType)rhs->as<USize>()->value);
       }
       break;
@@ -537,50 +537,50 @@ Object* obj_bigger_or_equal(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int >= int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Bool(lhs->as<Int>()->value >= rhs->as<Int>()->value);
 
         // int >= float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Bool(lhs->as<Int>()->value >= (Int::ValueType)rhs->as<Float>()->value);
 
         // int >= usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Bool(lhs->as<Int>()->value >= (Int::ValueType)rhs->as<USize>()->value);
       }
       break;
 
-    case Type::Float:
+    case TypeInfo::Float:
       switch( rhs->type.kind ) {
         // float >= int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Bool(lhs->as<Float>()->value >= rhs->as<Int>()->value);
 
         // float >= float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Bool(lhs->as<Float>()->value >= (Float::ValueType)rhs->as<Float>()->value);
 
         // float >= usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Bool(lhs->as<Float>()->value >= (Float::ValueType)rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize >= int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Bool(lhs->as<USize>()->value >= (unsigned)rhs->as<Int>()->value);
 
         // usize >= float
-        case Type::Float:
+        case TypeInfo::Float:
           return new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<Float>()->value);
 
         // usize >= usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Bool(lhs->as<USize>()->value >= (USize::ValueType)rhs->as<USize>()->value);
       }
       break;
@@ -596,26 +596,26 @@ Object* obj_bit_and(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int & int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value & rhs->as<Int>()->value);
         
         // int & usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value & rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize & int
-        case Type::Int:
+        case TypeInfo::Int:
           return new USize(lhs->as<USize>()->value & rhs->as<Int>()->value);
         
         // usize & usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value & rhs->as<USize>()->value);
       }
       break;
@@ -631,26 +631,26 @@ Object* obj_bit_xor(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
 
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int & int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value ^ rhs->as<Int>()->value);
         
         // int ^ usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value ^ rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize ^ int
-        case Type::Int:
+        case TypeInfo::Int:
           return new USize(lhs->as<USize>()->value ^ rhs->as<Int>()->value);
         
         // usize ^ usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value ^ rhs->as<USize>()->value);
       }
       break;
@@ -666,26 +666,26 @@ Object* obj_bit_or(AST::Expr* expr, Object* lhs, Object* rhs) {
   (void)expr;
   
   switch( lhs->type.kind ) {
-    case Type::Int:
+    case TypeInfo::Int:
       switch( rhs->type.kind ) {
         // int | int
-        case Type::Int:
+        case TypeInfo::Int:
           return new Int(lhs->as<Int>()->value | rhs->as<Int>()->value);
         
         // int | usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new Int(lhs->as<Int>()->value | rhs->as<USize>()->value);
       }
       break;
 
-    case Type::USize:
+    case TypeInfo::USize:
       switch( rhs->type.kind ) {
         // usize | int
-        case Type::Int:
+        case TypeInfo::Int:
           return new USize(lhs->as<USize>()->value | rhs->as<Int>()->value);
         
         // usize | usize
-        case Type::USize:
+        case TypeInfo::USize:
           return new USize(lhs->as<USize>()->value | rhs->as<USize>()->value);
       }
       break;
@@ -746,8 +746,8 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
   if( !result ) {
     Error(expr->token)
       .setMessage(
-        "invalid operator: '" + lhs->type.toString() + "' "
-          + std::string(expr->token->str) + " '" + rhs->type.toString() + "'")
+        "invalid operator: '" + lhs->type.to_string() + "' "
+          + std::string(expr->token->str) + " '" + rhs->type.to_string() + "'")
       .emit()
       .exit();
   }

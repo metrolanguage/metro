@@ -608,11 +608,18 @@ bool Parser::eat(std::string_view s) {
 }
 
 Token* Parser::expect(std::string_view s) {
-  if( !this->eat(s) )
-    Error(this->token)
-      .setMessage("expected '" + std::string(s) + "'")
-      .emit()
-      .exit();
+  if( !this->eat(s) ) {
+    Error err{ this->token->prev ? this->token->prev : this->token };
+
+    if( this->token->prev ) {
+      err.setMessage("expected '" + std::string(s) + "' after this token");
+    }
+    else {
+      err.setMessage("expected '" + std::string(s) + "' but found '" + std::string(this->token->str) + "'");
+    }
+
+    err.emit().exit();
+  }
 
   return this->ate;
 }

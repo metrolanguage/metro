@@ -10,7 +10,7 @@ namespace AST {
   struct Struct;
 }
 
-struct Type {
+struct TypeInfo {
   enum Kind {
     None,
     Int,
@@ -27,26 +27,26 @@ struct Type {
     Struct,
     Enumerator,
     Args,
-    Any,
+    Any,    // ?
   };
 
   Kind kind;
-  bool isConst;
-  std::vector<Type> params;
+  bool is_mutable;
+  std::vector<TypeInfo> params;
 
   union {
     struct {
-      AST::Enum const* astEnum;
-      size_t enumeratorIndex;
-    };
+      AST::Enum* ast;
+      size_t index;
+    } enum_context;
 
-    AST::Struct const* astStruct;
+    AST::Struct const* ast_struct;
   };
 
-  bool equals(Type const& type) const;
-  std::string toString() const;
+  bool equals(TypeInfo const& type) const;
+  std::string to_string() const;
 
-  bool isIterable() const {
+  bool is_iterable() const {
     switch( this->kind ) {
       case Kind::String:
       case Kind::Vector:
@@ -58,16 +58,15 @@ struct Type {
     return false;
   }
 
-  Type(Kind kind = None)
+  TypeInfo(Kind kind = None)
     : kind(kind),
-      isConst(false),
-      astEnum(nullptr),
-      enumeratorIndex(0)
+      is_mutable(false),
+      enum_context({nullptr, 0})
   {
   }
 
-  Type(Kind kind, std::vector<Type>&& params)
-    : Type(kind)
+  TypeInfo(Kind kind, std::vector<TypeInfo>&& params)
+    : TypeInfo(kind)
   {
     this->params = std::move(params);
   }

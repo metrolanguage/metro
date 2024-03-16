@@ -1,4 +1,4 @@
-#include "Type.h"
+#include "TypeInfo.h"
 #include "AST.h"
 
 namespace metro {
@@ -15,24 +15,28 @@ static char const* names[] {
   "dict",
   "tuple",
   "range",
-  "",
-  "",
+  "",   // struct
+  "",   // enum
   "args",
   "any",
 };
 
-bool Type::equals(Type const& type) const {
-  if( this->kind == Type::Any || type.kind == Type::Any )
+//
+// 等しいかどうか評価
+bool TypeInfo::equals(TypeInfo const& type) const {
+  if( this->kind == TypeInfo::Any || type.kind == TypeInfo::Any )
     return true;
 
   if( this->kind != type.kind )
     return false;
 
-  if( this->kind == Type::Struct && this->astStruct != type.astStruct )
+  if( this->kind == TypeInfo::Struct && this->ast_struct != type.ast_struct )
     return false;
 
-  if( this->kind == Type::Enumerator
-    && (this->astEnum != type.astEnum || this->enumeratorIndex != type.enumeratorIndex) )
+  //
+  // enum
+  if( this->kind == TypeInfo::Enumerator
+    && (this->enum_context.ast != type.enum_context.ast || this->enum_context.index != type.enum_context.index) )
     return false;
 
   if( this->params.size() != type.params.size() )
@@ -47,15 +51,15 @@ bool Type::equals(Type const& type) const {
   return true;
 }
 
-std::string Type::toString() const {
+std::string TypeInfo::to_string() const {
   switch( this->kind ) {
-    case Type::Enumerator:
+    case TypeInfo::Enumerator:
       return
-        this->astEnum->getName()
-          + "." + std::string(this->astEnum->enumerators[this->enumeratorIndex]->str );
+        this->enum_context.ast->getName()
+          + "." + std::string(this->enum_context.ast->enumerators[this->enum_context.index]->str );
 
-    case Type::Struct:
-      return this->astStruct->getName();
+    case TypeInfo::Struct:
+      return this->ast_struct->getName();
   }
 
   std::string ret = names[static_cast<int>(this->kind)];
@@ -64,7 +68,7 @@ std::string Type::toString() const {
     ret += "<";
 
     for( auto&& p : this->params ) {
-      ret += p.toString();
+      ret += p.to_string();
       if( &p != &*this->params.rbegin() ) ret += ", ";
     }
 

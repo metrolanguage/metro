@@ -140,6 +140,7 @@ Token* Lexer::lex() {
     p->source = &this->loc;
 
   cur = new Token(TokenKind::End, cur, "", this->position);
+  cur->source = &this->loc;
 
   auto ret = top.next;
 

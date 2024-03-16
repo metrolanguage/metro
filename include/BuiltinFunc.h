@@ -16,7 +16,7 @@ struct BuiltinFunc {
 
   std::string   name;
   bool          have_self;
-  Type          self_type;
+  TypeInfo      self_type;
   FuncPointer   impl;
 
   Object* call(AST::CallFunc* ast, std::vector<Object*>& args) const;
