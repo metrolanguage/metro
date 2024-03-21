@@ -703,6 +703,7 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
     nullptr, // value
     nullptr, // variable
     nullptr, // callfunc
+    nullptr, // new
 
     nullptr, // array
     nullptr, // tuple
