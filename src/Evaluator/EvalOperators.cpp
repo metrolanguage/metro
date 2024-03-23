@@ -699,7 +699,7 @@ Object* obj_bit_or(AST::Expr* expr, Object* lhs, Object* rhs) {
 Object* Evaluator::evalOperator(AST::Expr* expr) {
   using opFuncPointer = Object*(*)(AST::Expr*, Object*, Object*);
 
-  static opFuncPointer operator_labels[] = {
+  static constexpr opFuncPointer operator_labels[] = {
     nullptr, // value
     nullptr, // variable
     nullptr, // callfunc
@@ -731,6 +731,8 @@ Object* Evaluator::evalOperator(AST::Expr* expr) {
     obj_bit_xor,
     obj_bit_or,
   };
+
+  static_assert(operator_labels[static_cast<int>(ASTKind::Add)] == &obj_add);
 
   auto lhs = this->eval(expr->left);
   auto rhs = this->eval(expr->right);
