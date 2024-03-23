@@ -6,6 +6,6 @@ def func(a, b) {
   return a + b;
 }
 
-println("hello!\n");
+println("hello!");
 println(num * func(1, 2));
 ```
